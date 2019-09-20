@@ -1,4 +1,4 @@
-﻿<# 
+<# 
    .SYNOPSIS
    Creating a snapshot in a DellEMC Isilon system for use with Veeam Backup & Replication NAS backup althernative path option.
 
@@ -31,8 +31,18 @@
    .INPUTS
    None. You cannot pipe objects to this script
 
+   .Example
+   If you want to use this script with only one NetApp system you can use this parameters.
+   You can add this file and parameter to a Veeam NAS Backup Job
+   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml"
+
+   .Example
+   If you want to use a secondary destination as source for NAS Backup you can use this parameter set.
+   You can add this file and parameter to a Veeam NAS Backup Job
+   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml" -UseSecondaryDestination -SecondaryCluster 192.168.1.220 -SecondarySVM "lab-netapp94-svm1" -SecondaryShare "vol_cifs_vault" -SecondaryCredentials "C:\scripts\saved_credentials_Administrator.xml" 
+
    .Notes 
-   Version:        1.0
+   Version:        1.1
    Author:         David Bewernick (david.bewernick@veeam.com)
    Creation Date:  05.09.2019
    Purpose/Change: Initial script development
@@ -61,7 +71,7 @@ Param(
    [int]$IsilonSnapExpireDays=2,
 
    [Parameter(Mandatory=$False)]
-   [string]$LogFile="C:\programdata\NASBackup.log"
+   [string]$LogFile="C:\programdata\IsilonNASBackup.log"
 
 )
 
@@ -136,10 +146,12 @@ PROCESS {
         Write-Log -Info "Trying to create a new snapshot mount for $IsilonSharePath" -Status Info
         #check if there is a snapshot with the same name
         try {
-            if(Get-isiSnapshot -name $SnapshotName) {
+            if($ExistingSnap = Get-isiSnapshot -name $SnapshotName) {
                 Write-Log -Info "Existing snapshot found, trying to rename it" -Status Info
                 #get the current time
-                $dateAppendix = Get-Date -Format yyyy-mm-dd_HH-mm-ss
+                $dateAppendix = get-date -Format yyyy-mm-dd_HH-mm-ss
+                #need to change this to the snap creation date
+                #$dateAppendix = get-date($ExistingSnap.creationTime) -Format yyyy-mm-dd_HH-mm-ss
                 try {
                     #rename the current snapshot with the date appended
                     $OldSnapshotName = $SnapshotName + "_" + $dateAppendix
