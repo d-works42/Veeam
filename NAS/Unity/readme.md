@@ -8,4 +8,4 @@ Based on https://github.com/marcohorstmann/psscripts/tree/master/NASBackup by Ma
 This is version 1.2
 
 Example
-.\Invoke-UnityNASBackup.ps1 -Script:UnityName unity01 -Script:UnityShare share01 -Script:UnityCredentialFile C:\Scripts\unit-credentials.xml -Script:SnapshotName VeeamNASBackup
+c:\scripts\latest\Invoke-UnityNASBackup.ps1 -Name unity01 -Share share01 -CredentialFile C:\Scripts\unit-credentials.xml
