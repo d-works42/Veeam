@@ -32,14 +32,7 @@
    None. You cannot pipe objects to this script
 
    .Example
-   If you want to use this script with only one NetApp system you can use this parameters.
-   You can add this file and parameter to a Veeam NAS Backup Job
-   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml"
-
-   .Example
-   If you want to use a secondary destination as source for NAS Backup you can use this parameter set.
-   You can add this file and parameter to a Veeam NAS Backup Job
-   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml" -UseSecondaryDestination -SecondaryCluster 192.168.1.220 -SecondarySVM "lab-netapp94-svm1" -SecondaryShare "vol_cifs_vault" -SecondaryCredentials "C:\scripts\saved_credentials_Administrator.xml" 
+   .\Invoke-IsilonNASBackup.ps1 -IsilonName "192.168.60.220" -IsilonCluster "isilon01" -IsilonShare "VeeamShare" -IsilonCredentialFile 'C:\Scripts\isilon-system-credentials.xml' -IsilonSnapExpireDays "2"
 
    .Notes 
    Version:        1.3
