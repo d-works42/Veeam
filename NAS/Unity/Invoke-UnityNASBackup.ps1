@@ -1,4 +1,4 @@
-﻿<# 
+<# 
    .SYNOPSIS
    Creating a snapshot in a DellEMC Isilon system for use with Veeam Backup & Replication NAS backup althernative path option.
 
@@ -26,25 +26,18 @@
    Set the seconds when the snapshot should be expired. The default value is 172800, which is 2 days.
    
    .PARAMETER LogFile
-   You can set your own path for log files from this script. Default path is the same VBR uses by default "C:\ProgramData\Veeam\Backup"
+   You can set your own path for log files from this script. Default path is the same VBR uses by default "C:\ProgramData\Veeam\Backup\UnityNASBackup.log"
    
    .INPUTS
    None. You cannot pipe objects to this script
 
    .Example
-   If you want to use this script with only one NetApp system you can use this parameters.
-   You can add this file and parameter to a Veeam NAS Backup Job
-   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml"
-
-   .Example
-   If you want to use a secondary destination as source for NAS Backup you can use this parameter set.
-   You can add this file and parameter to a Veeam NAS Backup Job
-   .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml" -UseSecondaryDestination -SecondaryCluster 192.168.1.220 -SecondarySVM "lab-netapp94-svm1" -SecondaryShare "vol_cifs_vault" -SecondaryCredentials "C:\scripts\saved_credentials_Administrator.xml" 
+    
 
    .Notes 
-   Version:        1.2
+   Version:        1.3
    Author:         David Bewernick (david.bewernick@veeam.com)
-   Creation Date:  20.09.2019
+   Creation Date:  24.10.2019
    Purpose/Change: Initial script development
    Based on:       https://github.com/marcohorstmann/psscripts/tree/master/NASBackup by Marco Horstmann (marco.horstmann@veeam.com)
  #> 
@@ -52,23 +45,29 @@
 [CmdletBinding(DefaultParameterSetName="__AllParameterSets")]
 Param(
 
-   [Parameter(Mandatory=$False)]
-   [string]$Script:UnityName="192.168.60.215",
+   [Parameter(Mandatory=$True)]
+   [alias("Name")]
+   [string]$Script:UnityName,
 
-   [Parameter(Mandatory=$False)]
-   [string]$Script:UnityShare="share01",
+   [Parameter(Mandatory=$True)]
+   [alias("Share")]
+   [string]$Script:UnityShare,
    
-   [Parameter(Mandatory=$False)]
-   [string]$Script:UnityCredentialFile="C:\scripts\unit-credentials.xml",   
+   [Parameter(Mandatory=$True)]
+   [alias("CredentialFile")]
+   [string]$Script:UnityCredentialFile,   
 
    [Parameter(Mandatory=$False)]
+   [alias("SnapshotName")]
    [string]$Script:SnapshotName="VeeamNASBackup",
 
    [Parameter(Mandatory=$False)]
+   [alias("SnapExpireSeconds")]
    [int]$Script:SnapExpireSeconds=172800,
 
    [Parameter(Mandatory=$False)]
-   [string]$Script:LogFile="C:\programdata\UnityNASBackup.log"
+   [alias("LogFile")]
+   [string]$Script:LogFile="C:\ProgramData\Veeam\Backup\UnityNASBackup.log"
 
 )
 
@@ -113,6 +112,20 @@ PROCESS {
             # Error handling if connection fails  
             Write-Log -Info "$_" -Status Error
             Write-Log -Info "Connection to $UnityName could not be established" -Status Error
+            exit 1
+        }
+    }
+    
+    function DisConnect-System($UnitySession) {
+        Write-Log -Info "Trying to disconnect from $UnitySession.SessionId" -Status Info
+        try {
+            Disconnect-Unity -session $UnitySession -Confirm:$false
+            #Return the new session
+            Write-Log -Info "Disconnected from $UnityName" -Status Info
+        } catch {
+            # Error handling if connection fails  
+            Write-Log -Info "$_" -Status Error
+            Write-Log -Info "Could not disconnect from $UnityName" -Status Error
             exit 1
         }
     }
@@ -165,7 +178,7 @@ PROCESS {
                 }
                 catch {
                     Write-Log -Info "$_" -Status Error
-                    Write-Log -Info "Renaming the old snapshot failed" -Status Error
+                    Write-Log -Info "Removing the old snapshot failed" -Status Error
                     exit 1
                 }
             }
@@ -217,6 +230,7 @@ PROCESS {
         }
     }
 
+
     Write-Log -Info " " -Status Info
     Write-Log -Info "-------------- NEW SESSION --------------" -Status Info
     Write-Log -Info " " -Status Info
@@ -241,8 +255,9 @@ PROCESS {
     create-NewBackupShare($SnapShotID)
     
     #Disconnect from the current session
-    #Disconnect-Unity -session $UnitySession -Confirm:$false
+    DisConnect-System($UnitySession)   
+  
 
 } # END Process
     
-    
+   
