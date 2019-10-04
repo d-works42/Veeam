@@ -26,7 +26,7 @@
    Set the days when the snapshot should be expired. The default value is 2 days.
    
    .PARAMETER LogFile
-   You can set your own path for log files from this script. Default path is the same VBR uses by default "C:\ProgramData\Veeam\Backup"
+   You can set your own path for log files from this script. Default path is the same VBR uses by default "C:\ProgramData\Veeam\Backup\IsilonNASBackup.log"
    
    .INPUTS
    None. You cannot pipe objects to this script
@@ -42,7 +42,7 @@
    .\Invoke-IsilonNASBackup.ps1 -PrimaryCluster 192.168.1.220 -PrimarySVM "lab-netapp94-svm1" -PrimaryShare "vol_cifs" -PrimaryClusterCredentials "C:\scripts\saved_credentials_Administrator.xml" -UseSecondaryDestination -SecondaryCluster 192.168.1.220 -SecondarySVM "lab-netapp94-svm1" -SecondaryShare "vol_cifs_vault" -SecondaryCredentials "C:\scripts\saved_credentials_Administrator.xml" 
 
    .Notes 
-   Version:        1.1
+   Version:        1.3
    Author:         David Bewernick (david.bewernick@veeam.com)
    Creation Date:  05.09.2019
    Purpose/Change: Initial script development
@@ -71,7 +71,7 @@ Param(
    [int]$IsilonSnapExpireDays=2,
 
    [Parameter(Mandatory=$False)]
-   [string]$LogFile="C:\programdata\IsilonNASBackup.log"
+   [string]$LogFile="C:\ProgramData\Veeam\Backup\IsilonNASBackup.log"
 
 )
 
@@ -171,7 +171,7 @@ PROCESS {
 
         #create a new snapshot for the share
         try {
-            New-isiSnapshots -name $SnapshotName -path "/ifs" -expires $IsilonSnapExpireDate
+            New-isiSnapshots -name $SnapshotName -path $IsilonSharePath -expires $IsilonSnapExpireDate
             Write-Log -Info "New snapshot named $SnapshotName created" -Status Info
         }
         catch {
