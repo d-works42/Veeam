@@ -3,7 +3,7 @@
    Creating a snapshot in a DellEMC Isilon system for use with Veeam Backup & Replication NAS backup althernative path option.
 
    .DESCRIPTION
-   This script creates a snapshot in a DellEMC Isilon system for the path of a defined SMB share. The snapshot is presented in the root subfolder .snapshots of the filesystem root.
+   This script creates a snapshot in a DellEMC Isilon system for the path of a defined SMB share. The snapshot is presented in the \ifs\.snapshot folder of the filesystem root.
    Hugh kodos go to Christopher Banck who created the PowerShell Module for Isilon which is used by this script: https://github.com/vchrisb/Isilon-POSH
    IsilonPlatform and SSLValidation are required to run this here successfully!
     
