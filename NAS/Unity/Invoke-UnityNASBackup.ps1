@@ -32,7 +32,7 @@
    None. You cannot pipe objects to this script
 
    .Example
-    
+   c:\scripts\latest\Invoke-UnityNASBackup.ps1 -Name unity01 -Share share01 -CredentialFile C:\Scripts\unity-credentials.xml 
 
    .Notes 
    Version:        1.3
