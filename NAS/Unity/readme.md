@@ -5,7 +5,7 @@ Hugh kodos go to Erwan Quélin who created the PowerShell Module for Unity which
 
 Based on https://github.com/marcohorstmann/psscripts/tree/master/NASBackup by Marco Horstmann (marco.horstmann@veeam.com)
 
-This is version 1.2
+This is version 1.3
 
 Example
 c:\scripts\latest\Invoke-UnityNASBackup.ps1 -Name unity01 -Share share01 -CredentialFile C:\Scripts\unity-credentials.xml
