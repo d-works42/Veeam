@@ -1,22 +1,19 @@
 <# 
    .SYNOPSIS
-   Creating a snapshot in a DellEMC Isilon system for use with Veeam Backup & Replication NAS backup althernative path option.
+   Creating a snapshot in a DellEMC Unity system for use with Veeam Backup & Replication NAS backup althernative path option.
 
    .DESCRIPTION
-   This script creates a snapshot in a DellEMC Isilon system for the path of a defined SMB share. The snapshot is presented in the root subfolder .snapshots of the filesystem root.
-   Hugh kodos go to Christopher Banck who created the PowerShell Module for Isilon which is used by this script: https://github.com/vchrisb/Isilon-POSH
-   IsilonPlatform and SSLValidation are required to run this here successfully!
+   This script creates a snapshot in a DellEMC Unity system for the storage resource of a SMB share. The snapshot will be presented as a cifs share in the given path.
+   Hugh kodos go to Erwan Quélin who created the PowerShell Module for Unity which is used by this script: https://github.com/equelin/Unity-Powershell
+   Please visit: https://unity-powershell.readthedocs.io/en/latest/ for further information and install instructions of the PowerShell module
     
-   .PARAMETER IsilonName
-   With this parameter you specify the Isilon DNS name or IP
+   .PARAMETER UnityName
+   With this parameter you specify the Unity DNS name or IP
 
-   .PARAMETER IsilonCluster
-   With this parameter you specify the clustername of the Isilon system
-
-   .PARAMETER IsilonShare
+   .PARAMETER UnityShare
    With this parameter you secify the source SMB share
 
-   .PARAMETER IsilonCredentialFile
+   .PARAMETER UnityCredentialFile
    This parameter is a filename of a saved credentials file for authentification
    
    .PARAMETER SnapshotName
@@ -259,5 +256,3 @@ PROCESS {
   
 
 } # END Process
-    
-   
