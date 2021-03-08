@@ -46,6 +46,21 @@ function Write-Log($Info, $Status){
 	}
 }
 
+Write-Log -Info " " -Status Info
+Write-Log -Info "-------------- NEW SESSION --------------" -Status Info
+Write-Log -Info " " -Status Info
+
+# Connecto to the local Veeam Backup for Microsoft Office 365 Server
+try {
+		Connect-VBOServer
+		Write-Log -Info "Connected to VBO server" -Status Info
+	} 
+	catch  {
+		Write-Log -Info "$_" -Status Error
+		Write-Log -Info "Failed to connecto to VBo server" -Status Error
+		exit
+	}
+
 # get the organization
 try {
 		$Org = Get-VBOOrganization -Name $OrgName
@@ -53,7 +68,7 @@ try {
 	} 
 	catch  {
 		Write-Log -Info "$_" -Status Error
-		Write-Log -Info "failed to load details for $Org" -Status Error
+		Write-Log -Info "Failed to load details for $Org" -Status Error
 		exit
 	}
 
@@ -64,7 +79,7 @@ try {
 	} 
 	catch  {
 		Write-Log -Info "$_" -Status Error
-		Write-Log -Info "failed to load Teams in $org" -Status Error
+		Write-Log -Info "Failed to load Teams in $org" -Status Error
 		exit
 	}
 	
@@ -75,7 +90,7 @@ try {
 	} 
 	catch  {
 		Write-Log -Info "$_" -Status Error
-		Write-Log -Info "failed to load Sites in $org" -Status Error
+		Write-Log -Info "Failed to load Sites in $org" -Status Error
 		exit
 	}
 
@@ -86,7 +101,7 @@ try {
 	} 
 	catch  {
 		Write-Log -Info "$_" -Status Error
-		Write-Log -Info "failed to load details for $SPjobName" -Status Error
+		Write-Log -Info "Failed to load details for $SPjobName" -Status Error
 		exit
 	}
 
@@ -97,7 +112,7 @@ try {
 	} 
 	catch  {
 		Write-Log -Info "$_" -Status Error
-		Write-Log -Info "failed to load exclusions for $job" -Status Error
+		Write-Log -Info "Failed to load exclusions for $job" -Status Error
 		exit
 	}
 	
@@ -120,7 +135,7 @@ foreach ($Team in $Teams) {
 		} 
 		catch  {
 			Write-Log -Info "$_" -Status Error
-			Write-Log -Info "failed to exclude $SiteName in $job" -Status Error
+			Write-Log -Info "Failed to exclude $SiteName in $job" -Status Error
 			exit
 		}
 	}
