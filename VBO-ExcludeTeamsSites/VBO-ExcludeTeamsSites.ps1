@@ -5,6 +5,11 @@
     Script to exclude the SharePoint Sites related to MS Teams in backup jobs
 .DESCRIPTION
     This script reads the available MS Teams and adds their names as an exclude to a backup job.
+	
+	ATTENTION: 
+	A job to protect MS Teams does not backup the complete SharePoint Site related to this Team.
+	So be aware that you might not protect data that has been added or changed outsite of a Team! 
+	
 	Developed with Veeam Backup for Microsoft Office 365 build version 5.0.1.179.
 	To be used under the MIT license.
 .LINK
