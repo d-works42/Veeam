@@ -14,8 +14,11 @@ Requires: Veeam Backup for Microsoft Office 365 v5
 ## Usage
 
 Modify these values to fit to your needs:
+$LogFile = "C:\scripts\logs\VBO-excludeTeamsSites.log"
 $OrgName = "YOURORGNAME"
 $SPjobName = "YOURJOB"
+
+To enable (1) or disable (0) logging modify the $LogEnable variable
 
 ## 🤝🏾 License
 Copyright (c) 2021 VeeamHub
