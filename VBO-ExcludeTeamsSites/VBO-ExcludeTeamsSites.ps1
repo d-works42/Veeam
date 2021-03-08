@@ -21,9 +21,6 @@
 # Import-Module Veeam.SharePoint.PowerShell
 # Import-Module Veeam.Teams.PowerShell
 
-# set the logfile path
-$LogFile = "C:\scripts\logs\VBO-excludeTeamsSites.log"
-
 # enable (1) or disable (0) logging
 $LogEnable = 1
 
@@ -32,6 +29,9 @@ $OrgName = "YOURORGNAME"
 
 # modify to fit to your SharePoint backup job
 $SPjobName = "YOURJOB"
+
+# set the logfile path
+$LogFile = "C:\scripts\logs\VBO-excludeTeamsSites_$SPjobName.log"
 
 function Write-Log($Info, $Status){
 	if ($LogEnable -eq 1){
@@ -107,7 +107,7 @@ foreach ($Team in $Teams) {
 	Write-Host "Team name: $TeamName"
 	if ($JobExclusions.Site.Name -contains $TeamName)
 	{
-		Write-Log -Info "$TeamName is alread excluded" -Status Info	
+		Write-Log -Info "$TeamName is alread excluded" -Status Status
 	}	
 	else {
 		try {
