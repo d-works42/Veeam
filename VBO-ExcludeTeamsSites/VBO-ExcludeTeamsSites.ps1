@@ -23,10 +23,10 @@ $LogFile = "C:\scripts\logs\VBO-excludeTeamsSites.log"
 $LogEnable = 1
 
 # modify to fit to you organization
-$OrgName = "dabew.onmicrosoft.com"
+$OrgName = "YOURORGNAME"
 
 # modify to fit to your SharePoint backup job
-$SPjobName = "SharePoint"
+$SPjobName = "YOURJOB"
 
 function Write-Log($Info, $Status){
 	if ($LogEnable -eq 1){
