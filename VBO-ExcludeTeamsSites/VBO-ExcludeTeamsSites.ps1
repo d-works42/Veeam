@@ -131,12 +131,13 @@ foreach ($Team in $Teams) {
 			$ExcludeItem = New-VBOBackupItem -Site $ExcludeSite
 			Write-Host "ExcludeItem: $ExcludeItem"
 			Add-VBOExcludedBackupItem -Job $Job -BackupItem $ExcludeItem
-			Write-Log -Info "Excluded $SiteName in $job" -Status Info
+			Write-Log -Info "Excluded $TeamName in $job" -Status Info
 		} 
 		catch  {
 			Write-Log -Info "$_" -Status Error
-			Write-Log -Info "Failed to exclude $SiteName in $job" -Status Error
+			Write-Log -Info "Failed to exclude $TeamName in $job" -Status Error
 			exit
 		}
 	}
 }
+Disconnect-VBOServer
