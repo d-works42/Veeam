@@ -8,7 +8,7 @@
 	Developed with Veeam Backup for Microsoft Office 365 build version 5.0.1.179.
 	To be used under the MIT license.
 .LINK
-    http://www.github.com/nielsengelen
+    https://github.com/wcbuerste
 #>
 
 # Load the required Veeam Backup for Microsoft Office 365 PowerShell modules if you have PowerShell version 2.0
@@ -100,9 +100,9 @@ try {
 foreach ($Team in $Teams) {
 	$TeamName = $Team.DisplayName
 	Write-Host "Team name: $TeamName"
-	if ($JobExclusions -contains $TeamName)
+	if ($JobExclusions.Site.Name -contains $TeamName)
 	{
-		Write-Log -Info "$Team.DisplayName is alread excluded" -Status Info	
+		Write-Log -Info "$TeamName is alread excluded" -Status Info	
 	}	
 	else {
 		try {
