@@ -77,5 +77,6 @@ Get-VBODataMigration
 
 # !! validate source and target with script !!
 
+# Remove-VBODataMigrationLock
 # enable the retention for the proxy after validation is successful
 # Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "False" -Proxy $proxy
