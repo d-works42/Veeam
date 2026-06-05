@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 	Start the job based migration of Jet Repositories to Object Storage Repositories
 
@@ -52,11 +52,16 @@ Write-Host
 
 # Target Repository selection
 Write-Host "Select Target Repository:"
-$targetRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -ne $Null) -and (Get-VBOEntityData -Repository $_ -Type Organization -Name $organization.Name) -ne $Null} | Sort-Object Name
+$targetRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -ne $Null)} | Sort-Object Name
 for($i=0; $i -lt $targetRepos.count; $i++) { Write-Host $i.  $targetRepos[$i].name }
 $targetRepoNum = Read-Host  "Enter Target repository number"
 $targetRepository = $targetRepos[$targetRepoNum]
 Write-Host
+
+# Job switch selection
+Write-Host "Should the be job switched to the new target repository after migration? (y/n):"
+$switchJob = Read-Host "Enter y or n"
+
 
 # get the proxy name (holding the Jet based repository)
 $proxyname = ($sourceRepository.Proxy -split ':')[0]
@@ -67,7 +72,8 @@ $proxy = Get-VBOProxy -hostname $proxyname
 Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy $proxy
 
 # start the migration process
-Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job $selectedJob -SwitchJobToTargetRepository
+if($switchJob -eq "y") { Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job $selectedJob -SwitchJobToTargetRepository }
+else { Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job $selectedJob }
 
 # -------------------
 # wait until migration run is finished. to check the status, start a new console and run:
@@ -77,6 +83,8 @@ Get-VBODataMigration
 
 # !! validate source and target with script !!
 
-# Remove-VBODataMigrationLock
+# Remove taget repository lock
+# Remove-VBODataMigrationLock -Repository $targetRepository
+
 # enable the retention for the proxy after validation is successful
 # Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "False" -Proxy $proxy
