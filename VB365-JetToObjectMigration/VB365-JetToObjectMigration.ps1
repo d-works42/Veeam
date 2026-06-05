@@ -81,7 +81,7 @@ else { Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job
 Get-VBODataMigration
 # -------------------
 
-# !! validate source and target with script !!
+# !! validate source and target with script  "Jet to OSR migration script.ps1"!!
 
 # Remove taget repository lock
 # Remove-VBODataMigrationLock -Repository $targetRepository
