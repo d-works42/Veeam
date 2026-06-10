@@ -24,7 +24,7 @@ Please be aware that the provided information and code is only seen as examples 
 7. (optional) Enable retention on the source proxy
 
 ## Workflow steps in detail
-### Disable retention on the source proxy
+### 1. Disable retention on the source proxy
 
 #### Purpose
 Prevents the retention cleanup job from deleting recently migrated data, which can cause verification errors.
