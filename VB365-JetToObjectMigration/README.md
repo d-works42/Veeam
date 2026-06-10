@@ -55,3 +55,21 @@ Some Data Migration related cmdlets are disabled by default and they must be ena
 #### Notes
 Setting this in a PowerShell session is only kept for the current session. If needed frequently please add this variable globally in the system.
 
+### 3. Start migration to an empty target repository
+#### Purpose
+Begins the migration of data from a source repository to a target repository
+#### Prerequisites 
+The target repository must be empty. Starting a migration creates a migration lock on the target repository, restricting its use to ongoing migration only.
+#### Execute
+Job mode:
+```
+ Start-VBODataMigration -Job <VBOJob> -To <VBORepository> [-SwitchJobToTargetRepository]
+```
+Organization mode:
+```
+Start-VBODataMigration -Organization <VBOOrganization> -From <VBORepository> -To <VBORepository> [-SwitchJobToTargetRepository]
+```
+#### Outcome
+Returns a migration session ID (JobId) for tracking progress.
+#### Notes
+If you use the *-SwitchJobToTargetRepository* parameter, the job switches only after a successful migration. If themigration finishes with errors or warnings, the switch does not occur. After switching, the job remains disabled until you perform the migration verification check and remove migration lock.

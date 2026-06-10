@@ -45,18 +45,10 @@ $validationType = "Job"
 $inventoryDataIdColumnName = "Backup Job Id"
 Write-Host
 
-# Source Repository selection
-Write-Host "Select Source Repository:"
-$sourceRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -eq $Null) -and (Get-VBOEntityData -Repository $_ -Type Organization -Name $organization.Name) -ne $Null} | Sort-Object Name
-for($i=0; $i -lt $sourceRepos.count; $i++) { Write-Host $i.  $sourceRepos[$i].name }
-$sourceRepoNum = Read-Host  "Enter Source repository number"
-$sourceRepository = $sourceRepos[$sourceRepoNum]
-Write-Host
-
 # Target Repository selection
 Write-Host "Select Target Repository:"
 $targetRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -ne $Null)} | Sort-Object Name
-for($i=0; $i -lt $targetRepos.count; $i++) { Write-Host $i.  $targetRepos[$i].name }
+for($i=0; $i -lt $targetRepos.count; $i++) { Write-Host $i. $targetRepos[$i].name }
 $targetRepoNum = Read-Host  "Enter Target repository number"
 $targetRepository = $targetRepos[$targetRepoNum]
 Write-Host
@@ -66,22 +58,20 @@ Write-Host "Should the be job switched to the new target repository after migrat
 $switchJob = Read-Host "Enter y or n"
 
 
-# get the proxy name (holding the Jet based repository)
-$proxyname = ($sourceRepository.Proxy -split ':')[0]
-
-$proxy = Get-VBOProxy -hostname $proxyname
+# get the proxy object (holding the Jet based repository)
+$proxy = $selectedJob.Repository.Proxy
 
 # disable the retention for the proxy
 Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy $proxy
 
 # start the migration process
-if($switchJob -eq "y") { Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job $selectedJob -SwitchJobToTargetRepository }
-else { Start-VBODataMigration -From $sourceRepository -To $targetRepository -Job $selectedJob }
+if($switchJob -eq "y") { Start-VBODataMigration -Job $selectedJob -To $targetRepository -SwitchJobToTargetRepository }
+else { Start-VBODataMigration -Job $selectedJob -To $targetRepository }
 
 # -------------------
 # wait until migration run is finished. to check the status, start a new console and run:
-[Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
-Get-VBODataMigration
+# [Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
+# Get-VBODataMigration
 # -------------------
 
 # !! validate source and target with script  "Jet to OSR migration script.ps1"!!
