@@ -63,13 +63,51 @@ The target repository must be empty. Starting a migration creates a migration lo
 #### Execute
 Job mode:
 ```
- Start-VBODataMigration -Job <VBOJob> -To <VBORepository> [-SwitchJobToTargetRepository]
+Start-VBODataMigration -Job <VBOJob> -To <VBORepository> [-SwitchJobToTargetRepository]
 ```
 Organization mode:
 ```
 Start-VBODataMigration -Organization <VBOOrganization> -From <VBORepository> -To <VBORepository> [-SwitchJobToTargetRepository]
 ```
 #### Outcome
-Returns a migration session ID (JobId) for tracking progress.
+Returns a migration session ID (JobId) for tracking progress if run with *-RunAsync*
 #### Notes
 If you use the *-SwitchJobToTargetRepository* parameter, the job switches only after a successful migration. If themigration finishes with errors or warnings, the switch does not occur. After switching, the job remains disabled until you perform the migration verification check and remove migration lock.
+
+### 4. Monitor status
+#### Purpose
+Tracks the status of the migration session using the session ID.
+Key status values:
+- Success: Migration completed successfully.
+- Warning: Migration completed with non critical warnings.
+- Failed: Migration failed.
+- Running, Stopped, etc.: Indicates current progress/state.
+#### Execute
+To get the status of all migration jobs:
+```
+Get-VBODataMigration
+```
+To get the status of a specific migration job:
+```
+Get-VBODataMigration Get-VBODataMigration -id <JobID>
+```
+### 4.1 Manage migration jobs
+In case it is needed to suspend or stop a migration job, the commands 
+*Suspend-VBODataMigration* , *Resume-VBODataMigration* and *Stop-vBODataMigration* can be used.
+#### Execute
+Get the object for the migration to manage:
+```
+$migration = Get-VBODataMigration -id <JobID>
+```
+Suspend a migration:
+```
+Suspend-VBODataMigration -migration $migration
+```
+Resume a migration:
+```
+Resume-VBODataMigration -migration $migration
+```
+Stop a migration and end the process:
+```
+Stop-VBODataMigration -migration $migration
+```
