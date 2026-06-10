@@ -26,24 +26,48 @@ Import-Module 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
 
 # Selection of organization, job, source and target repository
 
-# Organization selection
-Write-Host "Select Organization:"
-$orgs = Get-VBOOrganization | Sort-Object Name
-for($i=0; $i -lt $orgs.count; $i++) { Write-Host $i. $orgs[$i].name }
-$organisationNum = Read-Host "Enter organization number"
-$organization = $orgs[$organisationNum]
+# Validation type selection
+Write-Host "Select validation type:"
+Write-Host "0. Organization"
+Write-Host "1. Job"
+$validationTypeNum = Read-Host "Enter validation type number"
 Write-Host
 
-# Job selection
-Write-Host "Select Job:"
-$jobs = Get-VBOJob -Organization $organization | Sort-Object Name
-for($i=0; $i -lt $jobs.count; $i++) { Write-Host $i. $jobs[$i].name }
-$jobNum = Read-Host "Enter job number"
-$selectedJob = $jobs[$jobNum]
-$validationTarget = $selectedJob
-$validationType = "Job"
-$inventoryDataIdColumnName = "Backup Job Id"
-Write-Host
+if ($validationTypeNum -eq "1") {
+    # Job selection
+    Write-Host "Select Job:"
+    $jobs = Get-VBOJob -Organization $organization | Sort-Object Name
+    for($i=0; $i -lt $jobs.count; $i++) { Write-Host $i. $jobs[$i].name }
+    $jobNum = Read-Host "Enter job number"
+    $selectedJob = $jobs[$jobNum]
+    $validationTarget = $selectedJob
+    $validationType = "Job"
+    $inventoryDataIdColumnName = "Backup Job Id"
+    Write-Host
+
+	# get the proxy object (holding the Jet based repository)
+	$proxy = $selectedJob.Repository.Proxy
+
+} else {
+	# Organization selection
+	Write-Host "Select Organization:"
+	$orgs = Get-VBOOrganization | Sort-Object Name
+	for($i=0; $i -lt $orgs.count; $i++) { Write-Host $i. $orgs[$i].name }
+	$organisationNum = Read-Host "Enter organization number"
+	$organization = $orgs[$organisationNum]
+	Write-Host
+
+	# Source Repository selection
+	Write-Host "Select Source Repository:"
+	$sourceRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -eq $Null) -and (Get-VBOEntityData -Repository $_ -Type Organization -Name $organization.Name) -ne $Null} | Sort-Object Name
+	for($i=0; $i -lt $sourceRepos.count; $i++) { Write-Host $i.  $sourceRepos[$i].name }
+	$sourceRepoNum = Read-Host  "Enter Source repository number"
+	$sourceRepository = $sourceRepos[$sourceRepoNum]
+	Write-Host
+
+	# get the proxy object (holding the Jet based repository)
+	$proxy = $sourceRepository.Proxy
+}
 
 # Target Repository selection
 Write-Host "Select Target Repository:"
@@ -53,20 +77,30 @@ $targetRepoNum = Read-Host  "Enter Target repository number"
 $targetRepository = $targetRepos[$targetRepoNum]
 Write-Host
 
-# Job switch selection
-Write-Host "Should the be job switched to the new target repository after migration? (y/n):"
-$switchJob = Read-Host "Enter y or n"
-
-
-# get the proxy object (holding the Jet based repository)
-$proxy = $selectedJob.Repository.Proxy
-
 # disable the retention for the proxy
 Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy $proxy
 
-# start the migration process
-if($switchJob -eq "y") { Start-VBODataMigration -Job $selectedJob -To $targetRepository -SwitchJobToTargetRepository }
-else { Start-VBODataMigration -Job $selectedJob -To $targetRepository }
+if ($validationTypeNum -eq "0") {
+	# start the job mode migration process
+	if($switchJob -eq "y") { 
+		Start-VBODataMigration -Organization $organization -From $sourceRepository -To $targetRepository -SwitchJobToTargetRepository -RunAsync 
+	}
+	else { 
+		Start-VBODataMigration -Organization $organization -From $sourceRepository -To $targetRepository -RunAsync 
+	}
+}
+
+if ($validationTypeNum -eq "1") {
+	# start the job mode migration process
+	if($switchJob -eq "y") { 
+		Start-VBODataMigration -Job $selectedJob -To $targetRepository -SwitchJobToTargetRepository -RunAsync 
+	}
+	else { 
+		Start-VBODataMigration -Job $selectedJob -To $targetRepository -RunAsync 
+	}
+}
+
+
 
 # -------------------
 # wait until migration run is finished. to check the status, start a new console and run:

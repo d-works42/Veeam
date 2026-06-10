@@ -132,10 +132,11 @@ Adjust the Verification PowerShell Script *VB365_JetToOsrVerification.ps1* log p
 The provided script in this folder is provided to ease the process for data verification.
 
 ### 6. Remove Migration Lock 
-Remove-VBODataMigrationLock
 #### Purpose
 Removes the migration lock from the target repository, allowing normal operations such as backups and retention jobs.
 #### Execute
+```
 Remove-VBODataMigrationLock 
+```
 #### Note
 Once the lock is removed, you cannot repeat the migration for the same data set.
