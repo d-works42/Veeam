@@ -5,7 +5,7 @@ This project has the goal to support in migrating backup data from disk Reposito
 Please be aware that the provided information and code is only seen as examples and are not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
 
 ## Good to know
-- Veeam Backup for Microsoft 365 will be called **VB365** as an acronym in this document.
+- **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
 - This migration option is only supported from Jet to Object Storage.
 - Disk repositories are always bound to a single windows based Proxy.
 - 
@@ -45,3 +45,13 @@ $proxy = Get-VBOProxy -Hostname proxy01
 Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key
 "RetentionDisabled" -Value "True" -Proxy $proxy
 ```
+### 2. Enable Data Migration feature
+#### Purpose
+Some Data Migration related cmdlets are disabled by default and they must be enabled first.
+#### Execute
+```
+[Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
+```
+#### Notes
+Setting this in a PowerShell session is only kept for the current session. If needed frequently please add this variable globally in the system.
+
