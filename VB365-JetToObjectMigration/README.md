@@ -123,7 +123,7 @@ Managing migration jobs with these commands might take a moment to complete.
 
 ### 5. Verify Data Consistency
 #### Purpose
-Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script in this folder can be used to compare the data.
+Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365_JetToOsrVerification.ps1* in this folder can be used to compare the data.
 #### Outcome 
 No differences should be found between source and target. If any differences are detected, it could indicate a data loss during the migration process. In such case, try to run the migration again and if the issue persists, open a support ticket.
 #### Execute
