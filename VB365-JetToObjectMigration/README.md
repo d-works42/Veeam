@@ -10,4 +10,5 @@ Please be aware that the provided information and code is only seen as examples 
 - Source and Target Repository need to be bound to the same Proxy during the migration process.
 
 ## Hints for commands
-- Most commands require some objects to run. F.Ex. 
+- Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects for source and target repositories as well as the proxy. These objects can be created with Get-VBORepository and Get-VBOProxy.
+- 
