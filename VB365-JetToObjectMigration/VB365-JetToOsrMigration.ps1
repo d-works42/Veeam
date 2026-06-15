@@ -25,6 +25,13 @@ Import-Module 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
 [Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
 
 # Selection of organization, job, source and target repository
+# Organization selection
+Write-Host "Select Organization:"
+$orgs = Get-VBOOrganization | Sort-Object Name
+for($i=0; $i -lt $orgs.count; $i++) { Write-Host $i. $orgs[$i].name }
+$organisationNum = Read-Host "Enter organization number"
+$organization = $orgs[$organisationNum]
+Write-Host
 
 # Validation type selection
 Write-Host "Select validation type:"
@@ -49,14 +56,6 @@ if ($validationTypeNum -eq "1") {
 	$proxy = $selectedJob.Repository.Proxy
 
 } else {
-	# Organization selection
-	Write-Host "Select Organization:"
-	$orgs = Get-VBOOrganization | Sort-Object Name
-	for($i=0; $i -lt $orgs.count; $i++) { Write-Host $i. $orgs[$i].name }
-	$organisationNum = Read-Host "Enter organization number"
-	$organization = $orgs[$organisationNum]
-	Write-Host
-
 	# Source Repository selection
 	Write-Host "Select Source Repository:"
 	$sourceRepos = Get-VBORepository | Where-Object{($_.ObjectStorageRepository -eq $Null) -and (Get-VBOEntityData -Repository $_ -Type Organization -Name $organization.Name) -ne $Null} | Sort-Object Name
@@ -76,6 +75,10 @@ for($i=0; $i -lt $targetRepos.count; $i++) { Write-Host $i. $targetRepos[$i].nam
 $targetRepoNum = Read-Host  "Enter Target repository number"
 $targetRepository = $targetRepos[$targetRepoNum]
 Write-Host
+
+# Switch job to target repository during migration?
+Write-Host "Switch job to target repository during migration? (y/n)"
+$switchJob = Read-Host
 
 # disable the retention for the proxy
 Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy $proxy
