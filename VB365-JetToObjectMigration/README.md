@@ -44,8 +44,10 @@ Please see the Veeam Backup for Microsoft 365 PowerShell Reference **-link here 
     The Schedule is frequently and might be running in between the initial migration run.
     The migration should target an object storage Repository. 
 #### Advice
-    This is a supported scenario and the -SwitchJobToTargetRepository paramter can be used. 
+    This is a supported scenario and the -SwitchJobToTargetRepository paramter can be used when planned. 
     Use the -Organization parameter to target the migration for the whole source Repository. This will effect all jobs targeting this repository and if the -SwitchJobToTargetRepository parameter was true, the jobs will be disabled once the migration could successfully finish.
+    It is possible to use job based migration from the same source repository as long as the MigrationLock is on place on the target repository.
+    Only use Remove-VBODataMigrationLock once all data has been migrated!
 
 ### Multiple source Repositories to a single Repository
 #### Situation
