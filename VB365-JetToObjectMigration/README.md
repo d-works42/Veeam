@@ -167,7 +167,8 @@ The provided script in this folder is provided to ease the process for data veri
 Removes the migration lock from the target repository, allowing normal operations such as backups and retention jobs.
 #### Execute
 ```
-Remove-VBODataMigrationLock 
+$repository = Get-VBORepository -id <RepositoryID>
+Remove-VBODataMigrationLock -Repository $repository
 ```
 #### Note
 Once the lock is removed, you cannot repeat the migration for the same data set.
