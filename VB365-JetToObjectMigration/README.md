@@ -54,8 +54,7 @@ Please see the Veeam Backup for Microsoft 365 PowerShell Reference **-link here 
     Multiple source jobs are writing to different Jet Repositories.
     The migration should target a single object storage Repository.
 #### Advice
-    This is a non supported scenario!
-
+    This is not a supported scenario!
 
 ## Workflow steps in detail
 ### 1. Disable retention on the source proxy
