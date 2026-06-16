@@ -164,7 +164,7 @@ The provided script in this folder is provided to ease the process for data veri
 
 ### 6. Remove Migration Lock 
 #### Purpose
-Removes the migration lock from the target repository, allowing normal operations such as backups and retention jobs.
+Removes the migration lock from the target repository and enables the jobs to allow normal operations such as backups and retention jobs.
 #### Execute
 ```
 $repository = Get-VBORepository -id <RepositoryID>
@@ -172,3 +172,15 @@ Remove-VBODataMigrationLock -Repository $repository
 ```
 #### Note
 Once the lock is removed, you cannot repeat the migration for the same data set.
+
+### 7. Enable retention 
+#### Purpose
+Put back the retention cleanup for the source repositories on a proxy.
+#### Outcome
+Enables back the retention for all repositories on the source proxy
+#### Execute
+```
+Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "False" -Proxy {proxy}
+```
+#### Notes
+Only perform this step once all required migrations from this proxy are completed.
