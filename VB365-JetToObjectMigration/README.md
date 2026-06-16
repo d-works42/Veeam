@@ -4,14 +4,16 @@ This project has the goal to support in migrating backup data from disk Reposito
 ## Important note:
 Please be aware that the provided information and code is only seen as examples and are not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
 
+Please see the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
+
 ## Good to know
 - **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
-- This migration option is only supported from Jet to Object Storage.
+- This migration option is only supported from **Jet to Object Storage**.
 - Disk repositories are always bound to a single windows based Proxy.
-- 
+- Subsequence migration runs can use cached metadata for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
 
 ## Hints for commands
-- Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects for source and target repositories as well as the proxy. These objects can be created with Get-VBORepository and Get-VBOProxy.
+- Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy.
 - 
 
 ## Workflow overview
@@ -24,6 +26,34 @@ Please be aware that the provided information and code is only seen as examples 
 6. Verify data consistency by comparing source and target repository inventory reports
 7. Remove migration lock to enable regular use of the target repository
 8. (optional) Enable retention on the source proxy
+
+## Migration Scenarios
+### Single source job
+#### Situation
+    A single source job is writing to a Jet Repository. 
+    The Schedule is frequently and might be running in between the initial migration run.
+    The migration should target an object storage Repository.
+#### Advice
+    This is a supported scenario and the -SwitchJobToTargetRepository paramter should be used. 
+    Use the -Job parameter to target the migration for this specific source job.
+    If the -SwitchJobToTargetRepository parameter was true, the source job will be disabled once the migration could successfully finish.
+
+### Multiple source jobs on same Repository
+#### Situation
+    Multiple source jobs are writing to the same Jet Repository. 
+    The Schedule is frequently and might be running in between the initial migration run.
+    The migration should target an object storage Repository. 
+#### Advice
+    This is a supported scenario and the -SwitchJobToTargetRepository paramter can be used. 
+    Use the -Organization parameter to target the migration for the whole source Repository. This will effect all jobs targeting this repository and if the -SwitchJobToTargetRepository parameter was true, the jobs will be disabled once the migration could successfully finish.
+
+### Multiple source Repositories to a single Repository
+#### Situation
+    Multiple source jobs are writing to different Jet Repositories.
+    The migration should target a single object storage Repository.
+#### Advice
+    This is a non supported scenario!
+
 
 ## Workflow steps in detail
 ### 1. Disable retention on the source proxy

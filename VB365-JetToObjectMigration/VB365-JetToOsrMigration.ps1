@@ -55,6 +55,9 @@ if ($validationTypeNum -eq "1") {
 	# get the proxy object (holding the Jet based repository)
 	$proxy = $selectedJob.Repository.Proxy
 
+	# get the source repository (Jet based) from the job settings
+	$sourceRepository = $selectedJob.Repository
+
 } else {
 	# Source Repository selection
 	Write-Host "Select Source Repository:"
@@ -96,10 +99,10 @@ if ($validationTypeNum -eq "0") {
 if ($validationTypeNum -eq "1") {
 	# start the job mode migration process
 	if($switchJob -eq "y") { 
-		Start-VBODataMigration -Job $selectedJob -To $targetRepository -SwitchJobToTargetRepository -RunAsync 
+		Start-VBODataMigration -Job $selectedJob -From $sourceRepository -To $targetRepository -SwitchJobToTargetRepository -RunAsync 
 	}
 	else { 
-		Start-VBODataMigration -Job $selectedJob -To $targetRepository -RunAsync 
+		Start-VBODataMigration -Job $selectedJob -From $sourceRepository -To $targetRepository -RunAsync 
 	}
 }
 
