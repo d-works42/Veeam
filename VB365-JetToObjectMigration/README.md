@@ -6,15 +6,16 @@ Please be aware that the provided information and code is only seen as examples 
 
 Please see the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
 
+## Hint for commands
+Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy etc.
+
 ## Good to know
 - **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
-- This migration option is only supported from **Jet to Object Storage**.
+- This migration option is only supported from **Jet to Object Storage Repositories**.
+- Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
 - Disk repositories are always bound to a single windows based Proxy.
-- Subsequence migration runs can use cached metadata for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
-
-## Hints for commands
-- Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy.
-- 
+- Subsequence migration runs can use cached metadata (bookmarks) for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
+- The -Full parameter will force to not use the bookmarks and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
 
 ## Workflow overview
 
