@@ -14,8 +14,8 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 - This migration option is only supported from **Jet to Object Storage Repositories**.
 - Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
 - Disk repositories are always bound to a single windows based Proxy.
-- Subsequence migration runs can use cached metadata (bookmarks) for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
-- The -Full parameter will force to not use the bookmarks and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
+- Subsequence migration runs can use bookmarks stored in the target repositories for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
+- The -Full parameter of Start-VBODataMigration will force wipe out related bookmarks in the target repository and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
 
 ## Workflow overview
 
@@ -66,17 +66,14 @@ Prevents the retention cleanup job from deleting recently migrated data, which c
 Disables retention for the source repository, ensuring all data remains on the source during migration.
 #### Execute
 ```
-Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key
-"RetentionDisabled" -Value "True" -Proxy {proxy}
+Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy {proxy}
 ```
 #### Notes
 The {proxy} parameter is a VB365 Proxy object which needs to be created with the Get-VBOProxy cmdlet. 
 Example:
 ```
 $proxy = Get-VBOProxy -Hostname proxy01
-
-Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key
-"RetentionDisabled" -Value "True" -Proxy $proxy
+Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "True" -Proxy $proxy
 ```
 ### 2. Enable Data Migration feature
 #### Purpose
