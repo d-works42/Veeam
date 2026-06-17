@@ -53,7 +53,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 ### Multiple source Repositories to a single Repository
 #### Situation
     Multiple source jobs are writing to different Jet Repositories.
-    The migration should target a single object storage Repository.
+    The migration should target a single object storage Repository for these multiple source Jet Repositories.
 #### Advice
     This is not a supported scenario!
 
