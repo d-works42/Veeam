@@ -12,6 +12,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 ## Good to know
 - **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
 - This migration option is only supported from **Jet to Object Storage Repositories**.
+- The target Object Storage Repository can **not** have immutability enabled.
 - Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
 - Disk repositories are always bound to a single windows based Proxy.
 - Subsequence migration runs can use bookmarks stored in the target repositories for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
@@ -123,7 +124,7 @@ Get-VBODataMigration
 ```
 To get the status of a specific migration job:
 ```
-Get-VBODataMigration Get-VBODataMigration -id <JobID>
+Get-VBODataMigration -id <JobID>
 ```
 
 ### 5. Manage migration jobs
@@ -150,7 +151,7 @@ Stop-VBODataMigration -migration $migration
 When a migration is stopped, no switch of the backup job or unlocking is taking place.
 Managing migration jobs with these commands might take a moment to complete.
 
-### 5. Verify Data Consistency
+### 6. Verify Data Consistency
 #### Purpose
 Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365_JetToOsrVerification.ps1* in this folder can be used to compare the data.
 #### Outcome 
@@ -160,7 +161,7 @@ Adjust the Verification PowerShell Script *VB365_JetToOsrVerification.ps1* log p
 #### Notes
 The provided script in this folder is provided to ease the process for data verification.
 
-### 6. Remove Migration Lock 
+### 7. Remove Migration Lock 
 #### Purpose
 Removes the migration lock from the target repository and enables the jobs to allow normal operations such as backups and retention jobs.
 #### Execute
@@ -171,7 +172,7 @@ Remove-VBODataMigrationLock -Repository $repository
 #### Note
 Once the lock is removed, you cannot repeat the migration for the same data set.
 
-### 7. Enable retention 
+### 8. Enable retention 
 #### Purpose
 Put back the retention cleanup for the source repositories on a proxy.
 #### Outcome
