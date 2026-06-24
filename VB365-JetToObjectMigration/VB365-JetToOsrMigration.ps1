@@ -12,7 +12,7 @@
 
 .NOTES
 	NAME:  VB365-JetToObjectMigration.ps1
-	VERSION: 0.1
+	VERSION: 0.5
 	AUTHOR: David Bewernick
 	GITHUB: https://github.com/d-works
 

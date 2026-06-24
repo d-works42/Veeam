@@ -2,9 +2,9 @@
 This project has the goal to support in migrating backup data from disk Repositories to object storage Repositories.
 
 ## Important note:
-Please be aware that the provided information and code is only seen as examples and are not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
+Please be aware that the provided code is only seen as examples and are not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
 
-Please see the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
+Always check the offical Veeam Helpcenter pages and the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
 
 ## Hint for commands
 Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy etc.
@@ -14,6 +14,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 - This migration option is only supported from **Jet to Object Storage Repositories**.
 - The target Object Storage Repository can **not** have immutability enabled.
 - Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
+- Make sure that port 9193 is opened between the proxy servers, including the default proxy on the VB365 server.
 - Disk repositories are always bound to a single windows based Proxy.
 - Subsequence migration runs can use bookmarks stored in the target repositories for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
 - The -Full parameter of Start-VBODataMigration will force wipe out related bookmarks in the target repository and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
@@ -92,7 +93,7 @@ Begins the migration of data from a source repository to a target repository
 #### Prerequisites 
 The target repository must be empty. Starting a migration creates a migration lock on the target repository, restricting its use to ongoing migration only.
 #### Execute
-An example script to ease the start of a jod mode migration by selection can be found in this folder: *VB365-JetToOsrMigration.ps1*
+An example script with a GUI wrapper can be found within in this folder: *VB365-JetToOsrMigration-GUI.ps1*
 
 The manual start of a migration can be done in the following ways:
 
@@ -153,11 +154,11 @@ Managing migration jobs with these commands might take a moment to complete.
 
 ### 6. Verify Data Consistency
 #### Purpose
-Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365-JetToOsrVerification.ps1* in this folder can be used to compare the data.
+Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365-JetToOsrVerification-GUI.ps1* in this folder can be used to compare the data.
 #### Outcome 
 No differences should be found between source and target. If any differences are detected, it could indicate a data loss during the migration process. In such case, try to run the migration again and if the issue persists, open a support ticket.
 #### Execute
-Adjust the Verification PowerShell Script *VB365-JetToOsrVerification.ps1* log path in $reportPath if needed. Run the script and follow the selections.
+Run the *VB365-JetToOsrVerification-GUI.ps1* and perform the selections as needed before starting the verification.
 #### Notes
 The provided script in this folder is provided to ease the process for data verification.
 
@@ -170,7 +171,7 @@ $repository = Get-VBORepository -id <RepositoryID>
 Remove-VBODataMigrationLock -Repository $repository
 ```
 #### Note
-Once the lock is removed, you cannot repeat the migration for the same data set.
+Once the lock is removed, you cannot repeat the migration for the same data set. You can use the *Remove-VBODataMigrationLock-GUI.ps1* script to do this in a graphical UI.
 
 ### 8. Enable retention 
 #### Purpose
