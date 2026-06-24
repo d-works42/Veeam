@@ -3,11 +3,31 @@
 	GUI wrapper to verify a Jet to Object Storage Repository migration by comparing inventory reports.
 
 .DESCRIPTION
-  This script needs to be run on the VB365 Controller. It provides a graphical front end for selecting the
-  organization, validation type (Organization / Job), source and target repository and the report output path.
-  The selections mirror the original console script (VB365-JetToOsrVerification.ps1). It generates inventory
-  reports for source and target, compares Mailboxes, SharePoint Sites, Teams and OneDrive data, and writes the
-  result (including any differences) into the output box at the bottom of the window.
+    This script validates a JET-to-Object-Storage migration by generating inventory
+    reports for both the source (JET) and target (object storage) repositories and
+    comparing them for discrepancies. It provides a graphical front end for selection.
+
+    The script asks the operator to select:
+    - The Organization to verify.
+    - The validation scope: an entire Organization or a single Job.
+    - The source repository (a JET/block repository that is not backed by object storage).
+    - The target repository (a repository backed by object storage).
+
+    It then uses Get-VBORepositoryInventoryReport to produce inventory reports for the
+    latest restore point on both repositories (including all versions and deleted items)
+    and compares the following data types between source and target:
+    - Mailboxes
+    - SharePoint Sites
+    - Teams
+    - OneDrive
+
+    Any mismatch in item counts or identifiers is reported, indicating that the migration
+    may not have copied all data successfully.
+
+    Prerequisites:
+    - Run on a VB365 server (or a host with the VB365 PowerShell module installed).
+    - PowerShell 7 is required (the script uses the ternary operator).
+  
 
 .OUTPUTS
 	Inventory reports written to the selected report path and a pass/fail verification result with any detected
