@@ -2,7 +2,7 @@
 This project has the goal to support in migrating backup data from disk Repositories to object storage Repositories.
 
 ## Important note:
-Please be aware that the provided code is only seen as examples and are not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
+Please be aware that the provided code is only seen as examples and is not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
 
 Always check the offical Veeam Helpcenter pages and the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
 
@@ -180,7 +180,7 @@ Put back the retention cleanup for the source repositories on a proxy.
 Enables back the retention for all repositories on the source proxy
 #### Execute
 ```
-Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "False" -Proxy {proxy}
+Set-VBOConfigurationParameter -XPath "/Veeam/Archiver/RepositoryConfig" -Key "RetentionDisabled" -Value "False" -Proxy <proxy>
 ```
 #### Notes
 Only perform this step once all required migrations from this proxy are completed.
