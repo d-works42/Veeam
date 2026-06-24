@@ -53,7 +53,11 @@ catch {
 
 # --- Retrieve the repositories ----------------------------------------------
 try {
-    $repositories = Get-VBORepository -ErrorAction Stop | Sort-Object Name
+    # Only list repositories that currently have a migration lock set, since
+    # those are the only ones from which a lock can be removed.
+    $repositories = Get-VBORepository -ErrorAction Stop |
+        Where-Object { $null -ne $_.MigrationLock } |
+        Sort-Object Name
 }
 catch {
     [System.Windows.Forms.MessageBox]::Show(
@@ -84,7 +88,7 @@ $form.MinimizeBox   = $false
 
 # Label for the repository selector
 $lblRepo = New-Object System.Windows.Forms.Label
-$lblRepo.Text     = "Select repository:"
+$lblRepo.Text     = "Select repository with migration lock:"
 $lblRepo.Location = New-Object System.Drawing.Point(15, 20)
 $lblRepo.AutoSize = $true
 $form.Controls.Add($lblRepo)
