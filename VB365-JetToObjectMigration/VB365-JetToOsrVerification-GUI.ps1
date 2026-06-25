@@ -36,7 +36,7 @@
 .NOTES
 	NAME:  VB365-JetToOsrVerification-GUI.ps1
 	VERSION: 0.5
-	AUTHOR: Filip Volner, David Bewernick
+	AUTHOR: TBD, David Bewernick
 #>
 
 # ---------------------------------------------------------------------------

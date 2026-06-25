@@ -44,7 +44,7 @@
 .NOTES
     NAME:  VB365-JetToOsrVerification.ps1
     VERSION: 0.5
-    AUTHOR: Filip Volner
+    AUTHOR: TBD
 #>
 
 # Variables - set these accordingly
