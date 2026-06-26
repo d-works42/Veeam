@@ -23,14 +23,24 @@
 # ---------------------------------------------------------------------------
 # Pre-requisites
 # ---------------------------------------------------------------------------
-Add-Type -AssemblyName System.Windows.Forms
-Add-Type -AssemblyName System.Drawing
+# IMPORTANT: load the Veeam module BEFORE the WinForms assemblies. In PowerShell 7
+# the Veeam module performs its service endpoint handshake over gRPC. If WinForms /
+# System.Drawing are loaded first, they win assembly binding for shared dependencies
+# and the handshake fails with "Failed to perform endpoint handshake". Loading the
+# Veeam stack first (and forcing the handshake to complete) avoids the conflict.
 
 # If VBO is installed in a different path, please replace it with your own path.
 Import-Module 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
 
 # enable the migration option (on VB365 server)
 [Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
+
+# Force the endpoint handshake to complete now, while only the Veeam stack is loaded.
+$null = Get-VBOOrganization -ErrorAction SilentlyContinue
+
+# Now load the WinForms assemblies on top of the already-initialised gRPC stack.
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
 # ---------------------------------------------------------------------------
 # Build the form

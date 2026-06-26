@@ -25,6 +25,23 @@ if (([System.Threading.Thread]::CurrentThread.GetApartmentState() -ne [System.Th
     return
 }
 
+# IMPORTANT: load the Veeam module BEFORE the WinForms assemblies. In PowerShell 7
+# the Veeam module performs its service endpoint handshake over gRPC. If WinForms /
+# System.Drawing are loaded first, they win assembly binding for shared dependencies
+# and the handshake fails with "Failed to perform endpoint handshake". We load the
+# Veeam stack first and force the handshake to complete while only it is loaded.
+# Errors are intentionally suppressed here; the try/catch below re-imports (a fast
+# no-op once loaded) and reports any genuine load failure via a MessageBox.
+$veeamDll = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+if (Test-Path -LiteralPath $veeamDll) {
+    Import-Module $veeamDll -ErrorAction SilentlyContinue
+}
+else {
+    Import-Module Veeam.Archiver.PowerShell -ErrorAction SilentlyContinue
+}
+$null = Get-VBOOrganization -ErrorAction SilentlyContinue
+
+# Now load the WinForms assemblies on top of the already-initialised gRPC stack.
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
