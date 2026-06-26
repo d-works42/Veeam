@@ -398,6 +398,12 @@
           g.eaten = true;
           g.frightened = false;
           score += 200 * chainMultiplier;
+          // Bonus: Rubrik eaten first in this power-pellet chain
+          if (g.name === "Rubrik" && chainMultiplier === 1) {
+            score += 100;
+            spawnFirework(g.x, g.y, g.color);
+            floatText(g.x, g.y, "+100!", "#ffd23f");
+          }
           chainMultiplier *= 2;
           updateHud();
         } else {
@@ -433,6 +439,76 @@
     started = false;
     updateHud();
     setMsg("Level " + level + " — press any arrow");
+  }
+
+  // ---- Particles / fireworks ---------------------------------------
+  let particles = [];
+  let floaters = [];
+
+  function spawnFirework(tx, ty, color) {
+    const cx = tx * TILE + TILE / 2;
+    const cy = ty * TILE + TILE / 2;
+    const colors = [color, "#ffd23f", "#ffffff", "#00ff66"];
+    const n = 28;
+    for (let i = 0; i < n; i++) {
+      const ang = (Math.PI * 2 * i) / n + Math.random() * 0.2;
+      const spd = 1.5 + Math.random() * 2.5;
+      particles.push({
+        x: cx, y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        life: 1,
+        decay: 0.015 + Math.random() * 0.02,
+        color: colors[i % colors.length],
+        size: 1.5 + Math.random() * 2,
+      });
+    }
+  }
+
+  function floatText(tx, ty, text, color) {
+    floaters.push({
+      x: tx * TILE + TILE / 2,
+      y: ty * TILE + TILE / 2,
+      text, color, life: 1,
+    });
+  }
+
+  function updateParticles() {
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.06;        // gravity
+      p.vx *= 0.97;        // drag
+      p.life -= p.decay;
+    }
+    particles = particles.filter(p => p.life > 0);
+
+    for (const f of floaters) {
+      f.y -= 0.6;
+      f.life -= 0.012;
+    }
+    floaters = floaters.filter(f => f.life > 0);
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    for (const f of floaters) {
+      ctx.globalAlpha = Math.max(0, f.life);
+      ctx.fillStyle = f.color;
+      ctx.font = "bold 14px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ---- Rendering ---------------------------------------------------
@@ -575,8 +651,11 @@
       }
     }
 
+    updateParticles();
+
     drawPac();
     ghosts.forEach(drawGhost);
+    drawParticles();
 
     // restart from game over
     requestAnimationFrame(loop);
