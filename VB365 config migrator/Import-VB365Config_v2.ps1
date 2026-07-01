@@ -64,7 +64,7 @@ function Write-Skip { param($m) Write-Host "  [SKIP] $m"  -ForegroundColor DarkG
 function Write-Info { param($m) Write-Host "  [INFO] $m"  -ForegroundColor White    }
 
 # Convert plain-text password to SecureString (parameter accepts both forms)
-$CertificatePassword = $CertificatePassword | ConvertTo-SecureString -AsPlainText -Force
+$CertificatePasswordSecure = $CertificatePassword | ConvertTo-SecureString -AsPlainText -Force
 
 # ── Validate import folder ────────────────────────────────────────────────────
 if (-not (Test-Path $ImportPath -PathType Container)) {
@@ -128,89 +128,115 @@ foreach ($exportedOrg in $exportedOrgs) {
         continue
     }
 
-    $backupApps = @($exportedOrg.BackupApplications)
-    if ($backupApps.Count -eq 0) {
-        Write-Fail "No backup application entries in export for $orgName"
-        $stats.Failed++
-        continue
-    }
+    $useVeeamAAD = $exportedOrg.PSObject.Properties['UseVeeamAADApplication'] -and [bool]$exportedOrg.UseVeeamAADApplication
+    $backupApps  = @($exportedOrg.BackupApplications)
 
-    $appEntry = $backupApps[0]
-
-    if (-not $appEntry.ApplicationId) {
-        Write-Fail "No ApplicationId in export for $orgName"
-        $stats.Failed++
-        continue
-    }
-    if (-not $appEntry.CertificateExportFile) {
-        Write-Fail "No certificate export file recorded for $orgName"
-        $stats.Failed++
-        continue
-    }
-
-    $pfxPath = Join-Path $certDir $appEntry.CertificateExportFile
-    if (-not (Test-Path $pfxPath)) {
-        Write-Fail "PFX file not found: $pfxPath"
-        $stats.Failed++
-        continue
-    }
-
-    Write-Info "  Application ID : $($appEntry.ApplicationId)"
-    Write-Info "  Certificate    : $($appEntry.CertificateExportFile)"
-    if ($appEntry.CertificateExpiry) { Write-Info "  Cert expiry    : $($appEntry.CertificateExpiry)" }
-
-    $impersonationAcct = if ($appEntry.PSObject.Properties['ImpersonationAccountName']) { $appEntry.ImpersonationAccountName } else { $null }
-    $officeOrgName     = if ($appEntry.PSObject.Properties['OfficeOrganizationName'])   { $appEntry.OfficeOrganizationName }   else { $null }
-
-    $authAccountParam = if ($impersonationAcct) {
-        @{ ImpersonationAccountName = $impersonationAcct }
-    } elseif ($officeOrgName) {
-        @{ OfficeOrganizationName = $officeOrgName }
+    if ($useVeeamAAD) {
+        # ── Veeam AAD application mode — no custom cert required ─────────────
+        Write-Info "  Auth mode      : Veeam AAD application"
+        Write-Step "  Registering organization"
+        if ($PSCmdlet.ShouldProcess($orgName, "Add-VBOOrganization")) {
+            try {
+                $newOrg = Add-VBOOrganization `
+                    -Name                  $orgName `
+                    -Region                $region `
+                    -UseVeeamAADApplication `
+                    -EnableOffice365Teams
+                Write-Ok "Registered: $orgName"
+                $stats.Registered++
+                $existingOrgs += $newOrg
+            } catch {
+                Write-Fail "Add-VBOOrganization failed for $orgName`: $_"
+                $stats.Failed++
+            }
+        } else {
+            Write-Info "[WhatIf] Add-VBOOrganization -Name '$orgName' -Region '$region' -UseVeeamAADApplication"
+        }
     } else {
-        @{ OfficeOrganizationName = $orgName }
-    }
-
-    $authLabel = if ($impersonationAcct) { "ImpersonationAccount: $impersonationAcct" } `
-                 elseif ($officeOrgName)  { "OfficeOrganizationName: $officeOrgName" } `
-                 else                     { "OfficeOrganizationName: $orgName (fallback)" }
-
-    Write-Step "  Building connection settings  ($authLabel)"
-    $connSettings = $null
-    if ($PSCmdlet.ShouldProcess($orgName, "New-VBOOffice365ApplicationOnlyConnectionSettings")) {
-        try {
-            $connSettings = New-VBOOffice365ApplicationOnlyConnectionSettings `
-                -ApplicationId                  ([guid]$appEntry.ApplicationId) `
-                -ApplicationCertificatePath     $pfxPath `
-                -ApplicationCertificatePassword $CertificatePassword `
-                @authAccountParam
-            Write-Ok "  Connection settings created"
-        } catch {
-            Write-Fail "New-VBOOffice365ApplicationOnlyConnectionSettings failed: $_"
+        # ── Custom backup application / certificate mode ──────────────────────
+        if ($backupApps.Count -eq 0) {
+            Write-Fail "No backup application entries in export for $orgName"
             $stats.Failed++
             continue
         }
-    } else {
-        Write-Info "[WhatIf] New-VBOOffice365ApplicationOnlyConnectionSettings -ApplicationId '$($appEntry.ApplicationId)'"
-    }
 
-    Write-Step "  Registering organization"
-    if ($PSCmdlet.ShouldProcess($orgName, "Add-VBOOrganization")) {
-        try {
-            $newOrg = Add-VBOOrganization `
-                -Name                                   $orgName `
-                -Region                                 $region `
-                -Office365ExchangeConnectionsSettings   $connSettings `
-                -Office365SharePointConnectionsSettings $connSettings `
-                -EnableOffice365Teams
-            Write-Ok "Registered: $orgName"
-            $stats.Registered++
-            $existingOrgs += $newOrg
-        } catch {
-            Write-Fail "Add-VBOOrganization failed for $orgName`: $_"
+        $appEntry = $backupApps[0]
+
+        if (-not $appEntry.ApplicationId) {
+            Write-Fail "No ApplicationId in export for $orgName"
             $stats.Failed++
+            continue
         }
-    } else {
-        Write-Info "[WhatIf] Add-VBOOrganization -Name '$orgName' -Region '$region'"
+        if (-not $appEntry.CertificateExportFile) {
+            Write-Fail "No certificate export file recorded for $orgName"
+            $stats.Failed++
+            continue
+        }
+
+        $pfxPath = Join-Path $certDir $appEntry.CertificateExportFile
+        if (-not (Test-Path $pfxPath)) {
+            Write-Fail "PFX file not found: $pfxPath"
+            $stats.Failed++
+            continue
+        }
+
+        Write-Info "  Application ID : $($appEntry.ApplicationId)"
+        Write-Info "  Certificate    : $($appEntry.CertificateExportFile)"
+        if ($appEntry.CertificateExpiry) { Write-Info "  Cert expiry    : $($appEntry.CertificateExpiry)" }
+
+        $impersonationAcct = if ($appEntry.PSObject.Properties['ImpersonationAccountName']) { $appEntry.ImpersonationAccountName } else { $null }
+        $officeOrgName     = if ($appEntry.PSObject.Properties['OfficeOrganizationName'])   { $appEntry.OfficeOrganizationName }   else { $null }
+
+        $authAccountParam = if ($impersonationAcct) {
+            @{ ImpersonationAccountName = $impersonationAcct }
+        } elseif ($officeOrgName) {
+            @{ OfficeOrganizationName = $officeOrgName }
+        } else {
+            @{ OfficeOrganizationName = $orgName }
+        }
+
+        $authLabel = if ($impersonationAcct) { "ImpersonationAccount: $impersonationAcct" } `
+                     elseif ($officeOrgName)  { "OfficeOrganizationName: $officeOrgName" } `
+                     else                     { "OfficeOrganizationName: $orgName (fallback)" }
+
+        Write-Step "  Building connection settings  ($authLabel)"
+        $connSettings = $null
+        if ($PSCmdlet.ShouldProcess($orgName, "New-VBOOffice365ApplicationOnlyConnectionSettings")) {
+            try {
+                $connSettings = New-VBOOffice365ApplicationOnlyConnectionSettings `
+                    -ApplicationId                  ([guid]$appEntry.ApplicationId) `
+                    -ApplicationCertificatePath     $pfxPath `
+                    -ApplicationCertificatePassword $CertificatePasswordSecure `
+                    @authAccountParam
+                Write-Ok "  Connection settings created"
+            } catch {
+                Write-Fail "New-VBOOffice365ApplicationOnlyConnectionSettings failed: $_"
+                $stats.Failed++
+                continue
+            }
+        } else {
+            Write-Info "[WhatIf] New-VBOOffice365ApplicationOnlyConnectionSettings -ApplicationId '$($appEntry.ApplicationId)'"
+        }
+
+        Write-Step "  Registering organization"
+        if ($PSCmdlet.ShouldProcess($orgName, "Add-VBOOrganization")) {
+            try {
+                $newOrg = Add-VBOOrganization `
+                    -Name                                   $orgName `
+                    -Region                                 $region `
+                    -Office365ExchangeConnectionsSettings   $connSettings `
+                    -Office365SharePointConnectionsSettings $connSettings `
+                    -EnableOffice365Teams
+                Write-Ok "Registered: $orgName"
+                $stats.Registered++
+                $existingOrgs += $newOrg
+            } catch {
+                Write-Fail "Add-VBOOrganization failed for $orgName`: $_"
+                $stats.Failed++
+            }
+        } else {
+            Write-Info "[WhatIf] Add-VBOOrganization -Name '$orgName' -Region '$region'"
+        }
     }
 }
 

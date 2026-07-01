@@ -169,9 +169,9 @@ Write-Host "Output : $exportRoot`n"
 
 if (-not $CertificatePassword) {
     Write-Host "A password is required to protect exported PFX files." -ForegroundColor Yellow
-    $CertificatePassword = Read-Host -AsSecureString -Prompt "PFX export password"
+    $CertificatePasswordSecure = Read-Host -AsSecureString -Prompt "PFX export password"
 } else {
-    $CertificatePassword = $CertificatePassword | ConvertTo-SecureString -AsPlainText -Force
+    $CertificatePasswordSecure = $CertificatePassword | ConvertTo-SecureString -AsPlainText -Force
 }
 
 #endregion
@@ -368,7 +368,7 @@ $cloudCreds['AzureServiceAccounts'] = Invoke-Collect "Azure service accounts" {
             $pfxName = "AzureServiceAccount_{0}_{1}.pfx" -f $safe, $short
             $pfxPath = Join-Path $certDir $pfxName
 
-            $exported = Export-CertificateFromStore -Thumbprint $thumbprint -DestinationPath $pfxPath -Password $CertificatePassword
+            $exported = Export-CertificateFromStore -Thumbprint $thumbprint -DestinationPath $pfxPath -Password $CertificatePasswordSecure
 
             $clean = $thumbprint -replace '\s', ''
             foreach ($store in @('Cert:\LocalMachine\My','Cert:\CurrentUser\My','Cert:\LocalMachine\Root','Cert:\LocalMachine\CA')) {
@@ -475,13 +475,14 @@ foreach ($org in $allOrgs) {
     Write-Step "  Processing: $($org.Name)"
 
     $orgDetail = [ordered]@{
-        Id                   = $org.Id.ToString()
-        Name                 = $org.Name
-        Type                 = $org.Type.ToString()
-        Region               = if ($org.PSObject.Properties['Region']) { $org.Region.ToString() } else { $null }
-        BackupApplications   = @()
-        VersionBackupOptions = $null
-        RetentionExclusions  = @()
+        Id                    = $org.Id.ToString()
+        Name                  = $org.Name
+        Type                  = $org.Type.ToString()
+        Region                = if ($org.PSObject.Properties['Region']) { $org.Region.ToString() } else { $null }
+        UseVeeamAADApplication = if ($org.PSObject.Properties['UseVeeamAADApplication']) { [bool]$org.UseVeeamAADApplication } else { $false }
+        BackupApplications    = @()
+        VersionBackupOptions  = $null
+        RetentionExclusions   = @()
     }
 
     # Certificate lives in the org's connection settings (Exchange + SharePoint share the same app/cert).
@@ -503,7 +504,7 @@ foreach ($org in $allOrgs) {
             $pfxName = "BackupApp_{0}_{1}.pfx" -f (ConvertTo-SafeFileName $appId), $thumbprint.Substring(0, [Math]::Min(8, $thumbprint.Length))
             $pfxPath = Join-Path $certDir $pfxName
 
-            $exported = Export-CertificateFromStore -Thumbprint $thumbprint -DestinationPath $pfxPath -Password $CertificatePassword
+            $exported = Export-CertificateFromStore -Thumbprint $thumbprint -DestinationPath $pfxPath -Password $CertificatePasswordSecure
 
             $certExpiry = $null
             $clean = $thumbprint -replace '\s', ''
