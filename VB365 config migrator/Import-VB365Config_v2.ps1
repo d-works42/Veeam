@@ -48,7 +48,8 @@ param(
     [string]                             $Server     = 'localhost',
     [Nullable[int]]                      $Port       = $null,
     [PSCredential]                       $Credential = $null,
-    [Parameter(Mandatory)][string]       $CertificatePassword
+    [Parameter(Mandatory)][string]       $CertificatePassword,
+    [switch]                             $SyncRepositories
 )
 
 Set-StrictMode -Version Latest
@@ -397,7 +398,10 @@ if (-not (Test-Path $reposJson)) {
             }
         }
 
-        if ($proxySyncNeeded) {
+        if ($proxySyncNeeded -and -not $SyncRepositories) {
+            Write-Info "Repository synchronisation skipped — use -SyncRepositories to enable"
+        }
+        if ($proxySyncNeeded -and $SyncRepositories) {
             Write-Host ""
             Write-Step "Rescanning default proxy: $($defaultProxy.Hostname)"
             if ($PSCmdlet.ShouldProcess($defaultProxy.Hostname, "Sync-VBOProxy")) {

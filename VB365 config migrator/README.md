@@ -113,10 +113,11 @@ The script is **idempotent** — it can be re-run safely. Every resource is chec
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `-ImportPath` | String | Yes | The timestamped export subfolder produced by the export script (e.g. `C:\VB365_Backup\VB365_Export_20260630_120000`). |
-| `-CertificatePassword` | SecureString | Yes | Password that was set when the PFX files were exported. |
+| `-CertificatePassword` | String | Yes | Password that was set when the PFX files were exported. |
 | `-Server` | String | No | VB365 server hostname or IP. Defaults to `localhost`. |
 | `-Port` | Int | No | Management service port. Only needed if moved from the default. |
 | `-Credential` | PSCredential | No | Credentials for the VB365 server. Omit to use the current Windows session. |
+| `-SyncRepositories` | Switch | No | After adding repositories, rescan the proxy and start a synchronisation session for each new repository. Off by default. |
 | `-WhatIf` | Switch | No | Shows what would be done without making any changes. |
 
 ### .OUTPUT
