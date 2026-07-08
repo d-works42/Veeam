@@ -11,6 +11,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 
 ## Important to know
 - **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
+- the commands must be run in PowerShell v7, which is default if started from the VB365 GUI.
 - It is highly recommended to run migrations with **VB365 v8.5 or newer**.
 - This migration option is only supported from **Jet to Object Storage Repositories**.
 - The target Object Storage Repository can **not** have immutability enabled.
