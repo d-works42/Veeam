@@ -3,8 +3,7 @@ This project has the goal to support in migrating backup data from disk Reposito
 
 ## Important note:
 Please be aware that the provided code is only seen as examples and is not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
-
-Always check the offical Veeam Helpcenter pages and the Veeam Backup for Microsoft 365 PowerShell Reference **-link here once released-**.
+Always check the offical Veeam Backup for Microsoft 365 PowerShell Reference in this limited access [Helpcenter](https://helpcenter.veeam.com/archive/vbo365/8.5/powershell_private/backup_data.html) version including the hidden comdlets.
 
 ## Hint for commands
 Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy etc.
@@ -17,9 +16,10 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
 - The target Object Storage Repository can **not** have immutability enabled.
 - Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
 - Make sure that port 9193 is opened between the proxy servers, including the default proxy on the VB365 server.
-- Disk repositories are always bound to a single windows based Proxy.
-- Subsequence migration runs can use bookmarks stored in the target repositories for mailbox folder/items, sharepoint list items and sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most teams data. The data is not duplicated in the target Repository, but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
+- Disk repositories are always bound to a single windows-based Proxy.
+- Subsequence migration runs can use bookmarks stored in the target repositories for Mailbox folder/items, Pharepoint list items and Sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most Teams data. The data is not duplicated in the target Repository but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
 - The -Full parameter of Start-VBODataMigration will force wipe out related bookmarks in the target repository and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
+- Monitor the saturation of source and target Proxy, VB365 Controller (Server), PostgreSQL server and NATS server during migrations. It might be necessary to temporarily add additional compute resources, especially when running source jobs in parallel. From experiences of runs in production environments it is recommended to add around 50% more CPU and MEM on the source Proxy holding the Jet Repository.
 
 ## Workflow overview
 
