@@ -28,7 +28,7 @@ Connects to a VB365 server (locally or remotely) and collects the following conf
 - **Infrastructure** — backup proxy servers and proxy pools
 - **Repositories** — local disk repositories and object storage repositories (Azure Blob, Amazon S3, S3-compatible); for object storage the account name, container/bucket name, folder name, and region are captured
 - **Encryption keys** — key descriptions and hints (key material is not exportable)
-- **Cloud credentials** — Azure service accounts, Azure Blob storage accounts, Amazon S3 accounts, S3-compatible accounts; account names and access keys are exported, **secret keys are not** (they are stored encrypted inside VB365 and cannot be retrieved)
+- **Cloud credentials** — Azure service accounts, Azure Blob storage accounts, Amazon S3 accounts, S3-compatible accounts; account names and access keys are exported. **Secret keys are not** since they are stored encrypted inside VB365 and cannot be retrieved, you need to enter them manually during restore.
 - **Organizations** — all registered Microsoft 365 organizations including region, backup application IDs, and authentication certificates (PFX files exported from the Windows certificate store)
 - **Backup jobs** *(optional, requires `-IncludeJobs`)* — job name, linked organization and repository, schedule policy, all selected and excluded items with their workload flags (Mailbox, Archive Mailbox, OneDrive, SharePoint, Teams, Teams Chats)
 - **Backup copy jobs** *(optional, requires `-IncludeJobs`)* — linked backup job, target repository, and schedule policy
