@@ -44,7 +44,7 @@
 .NOTES
     NAME:  VB365-JetToOsrVerification.ps1
     VERSION: 0.5
-    AUTHOR: TBD
+    KUDOS: Special thanks to the Veeam team to provide valuable input.
 #>
 
 # Variables - set these accordingly
