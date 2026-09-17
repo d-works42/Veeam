@@ -31,7 +31,7 @@ that single session.
 - PowerShell 7
 - 64-bit Outlook installed on the machine running this script (used by the Exchange
   item export/PST path)
-- The VB365 PowerShell module (`Veeam.Archiver.PowerShell.dll`), from the VB365
+- The VB365 PowerShell module (`Veeam.Archiver.PowerShell.psd1`), from the VB365
   console/management server installation
 
 ## Usage
@@ -61,7 +61,7 @@ that single session.
 | `-Workload` | One or more of `Exchange`, `OneDrive`, `SharePoint`, `Teams`. | all four |
 | `-ExcludeWorkload` | One or more of `Exchange`, `OneDrive`, `SharePoint`, `Teams` to skip, even if included in `-Workload` (e.g. `-ExcludeWorkload Teams` to run everything except Teams). | none excluded |
 | `-SampleSize` | Number of distinct random items to test per workload per organization (fewer are sampled if that many don't exist). | `1` |
-| `-ArchiverDllPath` | Path to `Veeam.Archiver.PowerShell.dll`. Importing by DLL path avoids the PowerShell 7 Windows PowerShell compatibility layer, which is known to silently drop `-Confirm:$false` on some VB365 cmdlets. | `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll` |
+| `-ArchiverModulePath` | Path to `Veeam.Archiver.PowerShell.psd1`.
 
 ## Output
 

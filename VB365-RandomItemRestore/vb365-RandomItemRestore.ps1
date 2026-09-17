@@ -58,8 +58,8 @@
     session opened for that workload/organization - no extra sessions are opened.
     Default: 1.
 
-.PARAMETER ArchiverDllPath
-    Path to Veeam.Archiver.PowerShell.dll. Importing by DLL path (instead of by module
+.PARAMETER ArchiverModulePath
+    Path to Veeam.Archiver.PowerShell.psd1. Importing by module path (instead of by module
     name) avoids the pwsh 7 Windows PowerShell compatibility/implicit-remoting layer,
     which is known to silently drop -Confirm:$false on some VB365 cmdlets.
 
@@ -95,7 +95,7 @@ param(
 
     [int]$SampleSize = 1,
 
-    [string]$ArchiverDllPath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+    [string]$ArchiverModulePath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,6 +103,27 @@ $Workload = @($Workload | Where-Object { $ExcludeWorkload -notcontains $_ })
 if (-not $Workload) { throw 'All workloads were excluded - nothing to do.' }
 
 $results = [System.Collections.Generic.List[pscustomobject]]::new()
+
+### If needed, import PowerShell modules for VB365 and ExchangeOnline
+
+Write-Host "Checking, installing and importing Veeam.Archiver.PowerShell module if needed." -ForegroundColor Yellow
+
+if (-not (Get-Module -Name Veeam.Archiver.PowerShell)) {
+    if (-not (Test-Path $ArchiverModulePath)) {
+        throw "Veeam.Archiver.PowerShell.psd1 not found at '$ArchiverModulePath'. Set -ArchiverModulePath to its location."
+    }
+    Import-Module $ArchiverModulePath -ErrorAction Stop
+}
+
+$vb365ModuleLoaded = [bool](Get-Module -Name Veeam.Archiver.PowerShell)
+
+if ($vb365ModuleLoaded) {
+    Write-Host "Veeam.Archiver.PowerShell module loaded successfully." -ForegroundColor Green
+} else {
+    Write-Host "PowerShell module load check failed: `n   Veeam.Archiver.PowerShell loaded: $vb365ModuleLoaded." -ForegroundColor Red
+}
+
+
 
 function Add-Result {
     param($Workload, $Organization, $Target, $Item, $Destination, $Status, $Detail)
@@ -347,16 +368,7 @@ function Test-TeamsRandomRestore {
     }
 }
 
-# --- Import module by DLL path: pwsh 7 loading it by name routes through the
-#     Windows PowerShell compatibility layer, which silently drops -Confirm:$false
-#     on some VB365 cmdlets. ---
-if (Test-Path $ArchiverDllPath) {
-    Import-Module $ArchiverDllPath -ErrorAction Stop
-}
-else {
-    Write-Warning "Archiver DLL not found at '$ArchiverDllPath'; falling back to Import-Module by name (some cmdlets may silently ignore -Confirm:`$false under this path)."
-    Import-Module Veeam.Archiver.PowerShell -ErrorAction Stop
-}
+
 
 # Nest every run's output under its own timestamped subfolder so repeated runs don't
 # overwrite or mix with each other's exports/report.
