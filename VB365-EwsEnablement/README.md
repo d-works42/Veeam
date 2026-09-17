@@ -58,9 +58,9 @@ in-memory before writing it back — existing application IDs are never lost.
 
 ## Parameters
 
-| Parameter             | Default                                                                                  | Description                                    |
-|-----------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------|
-| `-ArchiverModulePath` | `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1` | Path to the `Veeam.Archiver.PowerShell` module manifest. Override if VB365 is installed to a non-default location. |
+| Parameter              | Default                                                                                  | Description                                    |
+|------------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------|
+| `-ArchiverModulePath`  | `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1` | Path to the `Veeam.Archiver.PowerShell` module manifest. Override if VB365 is installed to a non-default location. |
 
 ## Usage
 
