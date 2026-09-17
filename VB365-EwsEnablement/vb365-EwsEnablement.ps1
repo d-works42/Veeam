@@ -12,18 +12,50 @@
     Last Modification Date: 2026-09-17
     License: MIT
 
-.PARAMETER ArchiverDllPath
-    Path to Veeam.Archiver.PowerShell.dll. Importing by DLL path (instead of by module
-    name) avoids the pwsh 7 Windows PowerShell compatibility/implicit-remoting layer,
-    which is known to silently drop -Confirm:$false on some VB365 cmdlets.
+.PARAMETER ArchiverModulePath
+    Path to the Veeam.Archiver.PowerShell module manifest (.psd1). Importing by manifest
+    path (instead of by module name) avoids the pwsh 7 Windows PowerShell compatibility/
+    implicit-remoting layer, which is known to silently drop -Confirm:$false on some
+    VB365 cmdlets.
 #>
 
 #Requires -Version 7.0
 
 [CmdletBinding()]
 param(
-    [string]$ArchiverDllPath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+    [string]$ArchiverModulePath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1'
 )
+
+### If needed, import PowerShell modules for VB365 and ExchangeOnline
+
+Write-Host "Checking, installing and importing ExchangeOnlineManagement and Veeam.Archiver.PowerShell modules if needed." -ForegroundColor Yellow
+
+if (-not (Get-Module -Name Veeam.Archiver.PowerShell)) {
+    if (-not (Test-Path $ArchiverModulePath)) {
+        throw "Veeam.Archiver.PowerShell.psd1 not found at '$ArchiverModulePath'. Set -ArchiverModulePath to its location."
+    }
+    Import-Module $ArchiverModulePath -ErrorAction Stop
+}
+
+if (-not (Get-Module -Name ExchangeOnlineManagement -ListAvailable)) {
+    Write-Host "ExchangeOnlineManagement module not found. Installing..." -ForegroundColor Yellow
+    Install-Module -Name ExchangeOnlineManagement -Scope CurrentUser -Force
+}
+
+if (-not (Get-Module -Name ExchangeOnlineManagement)) {
+    Import-Module ExchangeOnlineManagement -ErrorAction Stop
+}
+
+$vb365ModuleLoaded = [bool](Get-Module -Name Veeam.Archiver.PowerShell)
+$exoModuleLoaded = [bool](Get-Module -Name ExchangeOnlineManagement)
+
+if ($vb365ModuleLoaded -and $exoModuleLoaded) {
+    Write-Host "Veeam.Archiver.PowerShell and ExchangeOnlineManagement modules loaded successfully." -ForegroundColor Green
+} else {
+    Write-Host "PowerShell module load check failed: `n   Veeam.Archiver.PowerShell loaded: $vb365ModuleLoaded. `n   ExchangeOnlineManagement loaded: $exoModuleLoaded." -ForegroundColor Red
+}
+
+
 
 function Read-YesNo {
     param(
@@ -35,18 +67,6 @@ function Read-YesNo {
         $answer = Read-Host
     } until ($answer -match '^[yYnN]$')
     return $answer -match '^[yY]$'
-}
-
-if (-not (Get-Module -Name ExchangeOnlineManagement -ListAvailable)) {
-    Write-Host "ExchangeOnlineManagement module not found. Installing..." -ForegroundColor Yellow
-    Install-Module -Name ExchangeOnlineManagement -Scope CurrentUser -Force
-}
-
-if (-not (Get-Module -Name Veeam.Archiver.PowerShell)) {
-    if (-not (Test-Path $ArchiverDllPath)) {
-        throw "Veeam.Archiver.PowerShell.dll not found at '$ArchiverDllPath'. Set -ArchiverDllPath to its location."
-    }
-    Import-Module $ArchiverDllPath -ErrorAction Stop
 }
 
 try {
@@ -90,8 +110,6 @@ if (-not (Read-YesNo "`nContinue enabling EwsEnabled and adding this Application
     return
 }
 
-Disconnect-VBOServer
-
 Connect-ExchangeOnline
 
 $orgConfig = Get-OrganizationConfig
@@ -128,5 +146,7 @@ if ($currentAppIdList -contains $appId) {
 
 Write-Host "`nEwsAllowedAppIDs after update (verification):"
 (Get-OrganizationConfig -RetrieveEwsOperationAccessPolicy) | Format-List EwsAllowedAppIDs
+
+Disconnect-VBOServer
 
 Write-Host "`nScript completed." -ForegroundColor Cyan
