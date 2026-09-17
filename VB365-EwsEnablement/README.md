@@ -17,9 +17,11 @@ adds it if needed.
 
 ## What it does
 
-1. Ensures required modules are available (see [Requirements](#requirements)), installing
-   `ExchangeOnlineManagement` automatically if missing, and importing
-   `Veeam.Archiver.PowerShell` by DLL path.
+1. Loads both required modules up front (see [Requirements](#requirements)): imports
+   `Veeam.Archiver.PowerShell` by module manifest path, then installs
+   `ExchangeOnlineManagement` (if missing) and imports it. Verifies both modules actually
+   loaded and prints a confirmation; if either failed to load, the script stops with an
+   error before doing anything else.
 2. Connects to the VB365 server (prompting for a server name if not already connected) and
    lists all configured organizations.
 3. Prompts you to select an organization by number.
@@ -47,18 +49,18 @@ in-memory before writing it back — existing application IDs are never lost.
 - PowerShell 7 (enforced via `#Requires -Version 7.0`)
 - The `ExchangeOnlineManagement` module (installed automatically for the current user if
   not already present)
-- `Veeam.Archiver.PowerShell.dll` (part of the VB365 console install), imported by full
-  DLL path rather than by module name — this avoids a pwsh 7 issue where the Windows
-  PowerShell compatibility/implicit-remoting layer silently drops `-Confirm:$false` on
-  some VB365 cmdlets
+- The `Veeam.Archiver.PowerShell` module (part of the VB365 console install), imported by
+  its module manifest (`.psd1`) path rather than by module name — this avoids a pwsh 7
+  issue where the Windows PowerShell compatibility/implicit-remoting layer silently drops
+  `-Confirm:$false` on some VB365 cmdlets
 - Permissions to connect to both the VB365 server and Exchange Online (Exchange
   administrator or equivalent role)
 
 ## Parameters
 
-| Parameter         | Default                                                        | Description                                    |
-|-------------------|-----------------------------------------------------------------|-------------------------------------------------|
-| `-ArchiverDllPath` | `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll` | Path to `Veeam.Archiver.PowerShell.dll`. Override if VB365 is installed to a non-default location. |
+| Parameter             | Default                                                                                  | Description                                    |
+|-----------------------|--------------------------------------------------------------------------------------------|-------------------------------------------------|
+| `-ArchiverModulePath` | `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1` | Path to the `Veeam.Archiver.PowerShell` module manifest. Override if VB365 is installed to a non-default location. |
 
 ## Usage
 
@@ -72,7 +74,7 @@ the organization to process, and confirmation (y/n) before each change to Exchan
 If VB365 is installed to a non-default path:
 
 ```powershell
-./vb365-EwsEnablement.ps1 -ArchiverDllPath 'D:\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+./vb365-EwsEnablement.ps1 -ArchiverModulePath 'D:\Veeam\Backup365\Veeam.Archiver.PowerShell\Veeam.Archiver.PowerShell.psd1'
 ```
 
 ## Notes
