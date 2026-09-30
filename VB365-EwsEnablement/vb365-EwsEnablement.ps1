@@ -143,12 +143,18 @@ try {
     }
 
     $ewsPolicy = Get-OrganizationConfig -RetrieveEwsOperationAccessPolicy -ErrorAction Stop
+    if ($null -eq $ewsPolicy) {
+        throw "Get-OrganizationConfig -RetrieveEwsOperationAccessPolicy returned nothing. Cannot safely determine the current EwsAllowedAppIDs list."
+    }
     Write-Host "`nCurrent EwsAllowedAppIDs:"
     $ewsPolicy | Format-List EwsAllowedAppIDs
 
     $currentAppIdList = @()
     if (-not [string]::IsNullOrWhiteSpace($ewsPolicy.EwsAllowedAppIDs)) {
         $currentAppIdList = $ewsPolicy.EwsAllowedAppIDs -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' }
+    } elseif (-not (Read-YesNo "`nEwsAllowedAppIDs came back empty. Confirm this Exchange Online organization genuinely has no allow list entries yet (answering 'n' aborts without changing anything)" -Color Magenta)) {
+        Write-Warning "Aborting: EwsAllowedAppIDs read as empty and this was not confirmed as genuine. Refusing to write, since that could silently wipe out an existing allow list."
+        return
     }
 
     if ($currentAppIdList -contains $appId) {
