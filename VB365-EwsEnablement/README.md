@@ -42,6 +42,11 @@ adds it if needed.
    - If it isn't, asks for confirmation and, if confirmed, **appends** the ID to the
      existing list (never overwrites it) and writes the result back with
      `Set-OrganizationConfig -EwsAllowedAppIDs`.
+   - After writing, the script doesn't just trust that the write worked: if
+     `Set-OrganizationConfig` throws, it reports the actual error instead of a false
+     "updated" message. If the cmdlet reports no error but the application ID still isn't
+     present when re-read, it warns that the update may not have taken effect rather than
+     assuming success.
 10. Re-reads and displays `EwsAllowedAppIDs` again so you can verify the change.
 
 `Set-OrganizationConfig -EwsAllowedAppIDs` replaces the entire value rather than appending
