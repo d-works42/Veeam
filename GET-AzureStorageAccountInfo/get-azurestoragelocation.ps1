@@ -318,7 +318,16 @@ Write-Log "Subscriptions in scope: $(($subscriptions | ForEach-Object { $_.Name 
 $Results = New-Object System.Collections.Generic.List[object]
 $Found   = [System.Collections.Generic.HashSet[string]]::new()
 
+$subTotal = $subscriptions.Count
+$subIndex = 0
+
 foreach ($sub in $subscriptions) {
+    $subIndex++
+    $subPercent = [int](($subIndex - 1) / $subTotal * 100)
+    Write-Progress -Id 1 -Activity 'Gathering storage account information' `
+        -Status "Subscription $subIndex of $subTotal ($subPercent%): $($sub.Name)" `
+        -CurrentOperation 'Reading storage accounts from Azure...' -PercentComplete $subPercent
+
     Write-Log "Subscription '$($sub.Name)' ($($sub.Id))"
     try {
         Set-AzContext -Subscription $sub.Id -Tenant $sub.TenantId -ErrorAction Stop | Out-Null
@@ -336,8 +345,15 @@ foreach ($sub in $subscriptions) {
         continue
     }
 
-    $added = 0
+    $added    = 0
+    $saTotal  = $accounts.Count
+    $saIndex  = 0
     foreach ($sa in $accounts) {
+        $saIndex++
+        $saPercent = [int]($saIndex / $saTotal * 100)
+        Write-Progress -Id 2 -ParentId 1 -Activity "Storage accounts in '$($sub.Name)'" `
+            -Status "$saIndex of $saTotal ($saPercent%): $($sa.StorageAccountName)" -PercentComplete $saPercent
+
         if ($FilterNames -and -not $FilterNames.Contains($sa.StorageAccountName.ToLower())) { continue }
         try {
             $sku = ConvertFrom-StorageSku -SkuName "$($sa.Sku.Name)"
@@ -364,8 +380,11 @@ foreach ($sub in $subscriptions) {
         }
         catch { Write-Log "Error while processing storage account '$($sa.StorageAccountName)'." -Level Error -ErrorRecord $_ }
     }
+    Write-Progress -Id 2 -ParentId 1 -Activity "Storage accounts in '$($sub.Name)'" -Completed
     Write-Log "  $added of $($accounts.Count) storage account(s) added."
 }
+
+Write-Progress -Id 1 -Activity 'Gathering storage account information' -Completed
 
 if ($FilterNames) {
     $missing = @($FilterNames | Where-Object { -not $Found.Contains($_) } | Sort-Object)
