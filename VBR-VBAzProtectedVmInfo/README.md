@@ -180,8 +180,6 @@ If VBR does not expose a value the script needs, the object's property tree goes
 
 MIT License
 
-Copyright (c) 2026 David Bewernick
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
