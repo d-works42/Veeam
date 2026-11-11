@@ -132,6 +132,7 @@ All files from one run go into a subfolder named with the run timestamp:
 | Workload Type | `VM`, `Agent`, `Azure VM` (plug-in backups: `Other (Plug-in: ...)`) |
 | Backup Name | Name of the backup in VBR |
 | Placement | `Direct` or `SOBR '<name>' <Performance/Capacity/Archive> tier` |
+| VBAz Policy | Azure VMs only: the Veeam Backup for Microsoft Azure policy that created the backup |
 
 ### `Azure-ProtectedVMs_<timestamp>.csv`
 
@@ -163,13 +164,14 @@ If VBR does not expose a value the script needs, the object's property tree goes
 - **Veeam Data Cloud Vault:** vault repositories are detected by name and type. Their storage is not in your own subscriptions, so no Azure details are added.
 - **Backups:** `Get-VBRBackup` does not return imported or external backups, such as those from Veeam Backup for Microsoft Azure. The script also reads all backups from the configuration database and removes duplicates by backup ID.
 - **Workload names:** names are read from backup objects, object-in-backup (OIB) entries, child backups or restore points. For encrypted or imported backups with no object entries, the VM name comes from the child backup name (`<VM name> Backup`).
+- **VBAz policy:** read from the backup's `BackupPolicyName`. If that is empty, the name of the parent (policy) backup is used.
 - **Azure VMs:** VMs are matched by name across all accessible subscriptions. If the same name exists more than once, all matches are listed and a warning is logged.
 
 ---
 
 ## Known limitations
 
-- The Veeam Backup for Microsoft Azure appliance that created a backup is **not** reported. VBR does not reliably record it for imported backups.
+- The Veeam Backup for Microsoft Azure appliance that created a backup is **not** reported, even when the appliance is connected to VBR. The backup records do not reference it: the policy job is a temporary job without a job ID, and the target host is the VBR server. The VBR PowerShell module and its classes do not expose connected appliances either. The repository description is not used because it is free text. The policy is reported in `VBAz Policy`.
 - Matching the storage account by container name can be ambiguous when several storage accounts have a container with the same name.
 - Azure VMs that were deleted, renamed or are in subscriptions you cannot access show `Not found`.
 - Immutability is read from the repository object. External repositories do not expose it and show `Unknown`.

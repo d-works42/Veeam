@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Inventories Azure object storage repositories (incl. external repositories) across one or
     more Veeam Backup & Replication servers, the workloads stored in them, and enriches the
@@ -474,6 +474,17 @@ function Get-BackupObjectNames {
     return $names
 }
 
+#--- Veeam Backup for Microsoft Azure policy -----------------------------------------------------
+# Name of the Veeam Backup for Microsoft Azure policy that created a backup.
+function Get-BackupPolicyName {
+    param($Backup, $BackupById)
+    $n = "$(Get-FirstValue $Backup @('Info.BackupPolicyName', 'BackupPolicyName'))"
+    if ($n) { return $n }
+    $parentId = "$(Get-FirstValue $Backup @('ParentBackupId', 'Info.ParentBackupId'))"
+    if ($parentId -and $BackupById.Contains($parentId)) { return "$($BackupById[$parentId].Name)" }
+    return ''
+}
+
 function Invoke-VeeamCollection {
     param([Parameter(Mandatory)][string]$VbrServer)
 
@@ -586,6 +597,7 @@ function Invoke-VeeamCollection {
 
     $backups = @($backupById.Values)
 
+
     Write-Log "[$VbrServer] Analysing $($backups.Count) backups..."
     $azureBackupCount = 0
 
@@ -614,6 +626,9 @@ function Invoke-VeeamCollection {
             $names = @(Get-BackupObjectNames -Backup $b)
             if ($names.Count -eq 0) { continue }
 
+            # Policy - Azure VM backups only
+            $policy = if ($type -eq 'Azure VM') { Get-BackupPolicyName -Backup $b -BackupById $backupById } else { '' }
+
             foreach ($t in $targets) {
                 foreach ($n in $names) {
                     # parent and child backups both appear in the list -> one row per repository/workload
@@ -627,6 +642,7 @@ function Invoke-VeeamCollection {
                         'Workload Type'   = $type
                         'Backup Name'     = $b.Name
                         'Placement'       = $t.Placement
+                        'VBAz Policy'     = $policy
                     })
                 }
             }
