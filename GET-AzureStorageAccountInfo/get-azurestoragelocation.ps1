@@ -8,10 +8,17 @@
       - live from Azure (all storage accounts).
     The scope can be one selected subscription or all enabled subscriptions.
 
+    All output of a run is written to the subfolder <OutputRoot>\AzureStorageAccounts_<timestamp>\.
+
     For each storage account the following is written to <timestamp>_AzureStorageAccounts.csv:
-      StorageAccountName, ResourceGroup, Region, Redundancy (LRS, ZRS, GRS, RA-GRS, GZRS, RA-GZRS),
+      SubscriptionName, SubscriptionId, StorageAccountName, ResourceGroup, Region,
+      Redundancy (LRS, ZRS, GRS, RA-GRS, GZRS, RA-GZRS),
       AccessTier (Hot, Cool, Cold; Premium accounts have no access tier),
-      plus Performance, Kind, SubscriptionName and SubscriptionId for reference.
+      UsedCapacityGB (latest Azure Monitor 'UsedCapacity' value of the whole account, 1 GB = 1024^3 bytes),
+      plus Performance and Kind for reference.
+
+    UsedCapacityGB needs read access to Azure Monitor metrics (e.g. Reader or Monitoring Reader). Azure
+    updates the metric about once per hour, so a brand-new account may have no value yet ('N/A').
 
     Note: 'Archive' is not a storage account setting. Azure only allows Hot, Cool or Cold as the
     default access tier of an account; Archive is set per blob.
@@ -24,7 +31,8 @@
     or Name; if none of these exists, the first value of every line is used (file without header).
 
 .PARAMETER OutputRoot
-    Folder for the output CSV and the error log. Default: the script folder.
+    Base folder for the output. Each run creates a subfolder AzureStorageAccounts_<timestamp>
+    (timestamp = yyyyMMdd_HHmmss) that holds the output CSV and the error log. Default: the script folder.
 
 .PARAMETER Delimiter
     CSV delimiter for input and output. Default ','. Use ';' for Excel with German/European regional settings.
@@ -49,11 +57,11 @@ param(
 
 #region ---------- PowerShell version check ----------
 
-if ($PSVersionTable.PSVersion.Major -lt 7) {
-    Write-Host "This script requires PowerShell 7 or later. Current version: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))." -ForegroundColor Red
-    Write-Host 'Please start it with pwsh, e.g.:  pwsh -File .\get-azurestoragelocation.ps1' -ForegroundColor Red
-    exit 1
-}
+#if ($PSVersionTable.PSVersion.Major -lt 7) {
+#    Write-Host "This script requires PowerShell 7 or later. Current version: $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))." -ForegroundColor Red
+#    Write-Host 'Please start it with pwsh, e.g.:  pwsh -File .\get-azurestoragelocation.ps1' -ForegroundColor Red
+#    exit 1
+#}
 
 #endregion
 
@@ -64,12 +72,15 @@ $Timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $OutputRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
 }
-if (-not (Test-Path -Path $OutputRoot -PathType Container)) {
-    New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
+
+# Every run writes into its own subfolder named after the run timestamp
+$OutputDir = Join-Path $OutputRoot "AzureStorageAccounts_$Timestamp"
+if (-not (Test-Path -Path $OutputDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
 }
 
-$OutputCsv    = Join-Path $OutputRoot "$($Timestamp)_AzureStorageAccounts.csv"
-$ErrorLogFile = Join-Path $OutputRoot "$($Timestamp)_errors.log"
+$OutputCsv    = Join-Path $OutputDir "$($Timestamp)_AzureStorageAccounts.csv"
+$ErrorLogFile = Join-Path $OutputDir "$($Timestamp)_errors.log"
 $ErrorCount   = 0
 
 function Write-Log {
@@ -163,6 +174,29 @@ function ConvertFrom-StorageSku {
         Performance = $performance
         Redundancy  = if ($redundancy) { $redundancy } else { $SkuName }
     }
+}
+
+# Reads the latest 'UsedCapacity' metric (bytes, whole account) from Azure Monitor and returns it in GB.
+# Azure updates this metric about once per hour, so the last 24 hours are queried and the newest value is used.
+function Get-StorageAccountUsedGB {
+    param([Parameter(Mandatory)][string]$ResourceId)
+
+    $end      = (Get-Date).ToUniversalTime()
+    $start    = $end.AddHours(-24)
+    $timespan = [uri]::EscapeDataString("$($start.ToString('yyyy-MM-ddTHH:mm:ssZ'))/$($end.ToString('yyyy-MM-ddTHH:mm:ssZ'))")
+    $path     = "$ResourceId/providers/Microsoft.Insights/metrics?api-version=2023-10-01" +
+                "&metricnames=UsedCapacity&aggregation=Average&interval=PT1H&timespan=$timespan"
+
+    $response = Invoke-AzRestMethod -Method GET -Path $path -ErrorAction Stop
+    if ($response.StatusCode -ne 200) {
+        throw "Metrics API returned HTTP $($response.StatusCode): $($response.Content)"
+    }
+
+    $data   = (($response.Content | ConvertFrom-Json).value | Select-Object -First 1).timeseries | Select-Object -First 1 -ExpandProperty data
+    $latest = @($data | Where-Object { $null -ne $_.average }) | Select-Object -Last 1
+    if (-not $latest) { return $null }   # no value reported in the last 24 hours
+
+    return [math]::Round([double]$latest.average / 1GB, 2)
 }
 
 Write-Log "Run timestamp: $Timestamp"
@@ -364,16 +398,27 @@ foreach ($sub in $subscriptions) {
                 $accessTier = if ($sku.Performance -eq 'Premium') { 'N/A (Premium)' } else { 'N/A' }
             }
 
+            $usedGB = $null
+            try {
+                $usedGB = Get-StorageAccountUsedGB -ResourceId $sa.Id
+                if ($null -eq $usedGB) {
+                    $usedGB = 'N/A'
+                    Write-Log "No UsedCapacity metric reported in the last 24 hours for '$($sa.StorageAccountName)'." -Level Warning
+                }
+            }
+            catch { Write-Log "Could not read used capacity of storage account '$($sa.StorageAccountName)'." -Level Warning -ErrorRecord $_ }
+
             $Results.Add([PSCustomObject]@{
+                SubscriptionName   = $sub.Name
+                SubscriptionId     = $sub.Id
                 StorageAccountName = $sa.StorageAccountName
                 ResourceGroup      = $sa.ResourceGroupName
                 Region             = $sa.PrimaryLocation
                 Redundancy         = $sku.Redundancy
                 AccessTier         = $accessTier
+                UsedCapacityGB     = $usedGB
                 Performance        = $sku.Performance
                 Kind               = "$($sa.Kind)"
-                SubscriptionName   = $sub.Name
-                SubscriptionId     = $sub.Id
             })
             [void]$Found.Add($sa.StorageAccountName.ToLower())
             $added++
