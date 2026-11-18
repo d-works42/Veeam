@@ -11,33 +11,57 @@
 
 .NOTES
     NAME:  VB365-JetToObjectMigration.ps1
-	VERSION: 0.5
+	VERSION: 0.7
 	AUTHOR: David Bewernick
 	GITHUB: https://github.com/d-works
+
+.PARAMETER ArchiverModulePath
+    Path to Veeam.Archiver.PowerShell.dll in the VB365 install root
+    (default: C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll).
+    Importing the DLL directly loads the current module natively in pwsh 7. The .psd1
+    manifest in the Veeam.Archiver.PowerShell subfolder loads an older module version
+    (6.0) that lacks newer cmdlets, and importing by module name goes through the
+    Windows PowerShell compatibility layer, which drops -Confirm:$false.
 #>
+
+#Requires -Version 7.0
+
+
+# --- Load the Veeam module --------------------------------------------------
+
+[CmdletBinding()]
+param(
+    [string]$ArchiverModulePath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+)
+
+### If needed, import PowerShell modules for VB365 and ExchangeOnline
+
+Write-Host "Checking, installing and importing Veeam.Archiver.PowerShell module if needed." -ForegroundColor Yellow
+
+if (-not (Get-Module -Name Veeam.Archiver.PowerShell)) {
+    if (-not (Test-Path $ArchiverModulePath)) {
+        throw "Veeam.Archiver.PowerShell module not found at '$ArchiverModulePath'. Set -ArchiverModulePath to its location."
+    }
+    Import-Module $ArchiverModulePath
+}
+
+$vb365ModuleLoaded = [bool](Get-Module -Name Veeam.Archiver.PowerShell)
+
+if ($vb365ModuleLoaded) {
+    Write-Host "Veeam.Archiver.PowerShell module loaded successfully." -ForegroundColor Green
+} else {
+    Write-Host "PowerShell module load check failed: `n   Veeam.Archiver.PowerShell loaded: $vb365ModuleLoaded." -ForegroundColor Red
+}
+
+#enable the migration option (on VB365 server)
+[Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-# --- Load the Veeam module --------------------------------------------------
-try {
-    Import-Module Veeam.Archiver.PowerShell -ErrorAction Stop
-}
-catch {
-    [System.Windows.Forms.MessageBox]::Show(
-        "Unable to load the Veeam Backup for Microsoft 365 PowerShell module.`n`n$($_.Exception.Message)",
-        "Module Error",
-        [System.Windows.Forms.MessageBoxButtons]::OK,
-        [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
-    return
-}
-
-# enable the migration option (on VB365 server)
-[Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
-
 # --- Retrieve the repositories ----------------------------------------------
 try {
-    $repositories = Get-VBORepository -ErrorAction Stop | Sort-Object Name
+    $repositories = Get-VBORepository -ErrorAction Stop | where-object{($_.ObjectStorageRepository -ne $Null) -and ($_.MigrationLock -ne $null) } | Sort-Object Name
 }
 catch {
     [System.Windows.Forms.MessageBox]::Show(

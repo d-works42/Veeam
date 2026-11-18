@@ -3,23 +3,29 @@ This project has the goal to support in migrating backup data from disk Reposito
 
 ## Important note:
 Please be aware that the provided code is only seen as examples and is not officially tested and supported by Veeam. The used commands themself are supported, since they are offered directly through the product.
-Always check the offical Veeam Backup for Microsoft 365 PowerShell Reference in this limited access [Helpcenter](https://helpcenter.veeam.com/archive/vbo365/8.5/powershell_private/backup_data.html) version including the hidden comdlets.
+
+**This is an advanced manual process. If you are unsure what to do, it is recommended to contact your technical Veeam partner for assistance.**
+
+Always check the Veeam Backup for Microsoft 365 PowerShell Reference in this limited access [Helpcenter](https://helpcenter.veeam.com/archive/vbo365/8.5/powershell_private/backup_data.html) version, which includes  the hidden cmdlets.
 
 ## Hint for commands
 Most commands require some objects to run. For example, the Start-VBODataMigration cmdlet requires objects like job, repositories or proxy, depending on the run mode. These objects can be created with Get-VBORepository and Get-VBOProxy etc.
 
 ## Important to know
 - **Veeam Backup for Microsoft 365** will be called **VB365** as an acronym in this document.
-- the commands must be run in PowerShell v7, which is default if started from the VB365 GUI.
-- It is highly recommended to run migrations with **VB365 v8.5 or newer**.
+- the commands must be run in **PowerShell v7**, which is default if started from the VB365 GUI.
+- It is highly recommended to run migrations with **VB365 v8.6 or newer**.
+- Import the VB365 PowerShell module by its **DLL path** in PowerShell 7: `Import-Module 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'`. The `.psd1` manifest in the `Veeam.Archiver.PowerShell` subfolder loads an older module version that is missing newer cmdlets (e.g. *Get-VBORepositoryInventoryReport*), and importing by module name drops `-Confirm:$false`. The scripts in this folder use the DLL path by default (parameter *-ArchiverModulePath*).
+- Migration job logfiles are stored on the acting target Proxy only. If the target Object Storage Repository is bound to a Proxy Pool, please check for logs on all related Proxies.
 - This migration option is only supported from **Jet to Object Storage Repositories**.
+- You can migrate from Jet Repositories with item-based retention to Object Storage Repositories with snapshot-based retention. Be aware that the target Repository retention settings will be used, once the Repository Lock has been removed. Additionally take into consideration, that the first backup job run on the Object Storage Repository might download new data to fulfill the snapshot-based retention. It is recommended to get familiar with the two different types of retention: [Helpcenter - Retention](https://helpcenter.veeam.com/docs/vbo365/guide/retention_policy.html)
 - The target Object Storage Repository can **not** have immutability enabled.
 - Migration from multiple Jet Repositories to a single Object Storage Repository is currently **not** supported.
 - Make sure that port 9193 is opened between the proxy servers, including the default proxy on the VB365 server.
 - Disk repositories are always bound to a single windows-based Proxy.
-- Subsequence migration runs can use bookmarks stored in the target repositories for Mailbox folder/items, Pharepoint list items and Sharepoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most Teams data. The data is not duplicated in the target Repository but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
+- Subsequence migration runs can use bookmarks stored in the target repositories for Mailbox folder/items, SharePoint list items and SharePoint list views. Fully processed during re-runs are other data like sites, list metadata, web change tokens, web parts and most Teams data. The data is not duplicated in the target Repository but currently needs to be read and processed for consistency checks from source repository by the assigned proxy to the target proxy.
 - The -Full parameter of Start-VBODataMigration will force wipe out related bookmarks in the target repository and read all items fully from source again. No duplication will be done on the target repository if the items are identical.
-- Monitor the saturation of source and target Proxy, VB365 Controller (Server), PostgreSQL server and NATS server during migrations. It might be necessary to temporarily add additional compute resources, especially when running source jobs in parallel. From experiences of runs in production environments it is recommended to add around 50% more CPU and MEM on the source Proxy holding the Jet Repository.
+- Monitor the saturation of source and target Proxy, VB365 Controller (Server), PostgreSQL server and NATS server during migrations. It might be necessary to temporarily add additional compute resources, especially when running source jobs in parallel. From experiences of runs in production environments, it is recommended to add around 50% more CPU and MEM on the source Proxy holding the Jet Repository.
 
 ## Workflow overview
 
@@ -39,7 +45,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
     The Schedule is frequently and might be running in between the initial migration run.
     The migration should target an object storage Repository.
 #### Advice
-    This is a supported scenario and the -SwitchJobToTargetRepository paramter should be used. 
+    This is a supported scenario and the -SwitchJobToTargetRepository parameter should be used. 
     Use the -Job parameter to target the migration for this specific source job.
     If the -SwitchJobToTargetRepository parameter was true, the source job will be disabled once the migration could successfully finish.
 
@@ -49,7 +55,7 @@ Most commands require some objects to run. For example, the Start-VBODataMigrati
     The Schedule is frequently and might be running in between the initial migration run.
     The migration should target an object storage Repository. 
 #### Advice
-    This is a supported scenario and the -SwitchJobToTargetRepository paramter can be used when planned. 
+    This is a supported scenario and the -SwitchJobToTargetRepository parameter can be used when planned. 
     Use the -Organization parameter to target the migration for the whole source Repository. This will effect all jobs targeting this repository and if the -SwitchJobToTargetRepository parameter was true, the jobs will be disabled once the migration could successfully finish.
     It is possible to use job based migration from the same source repository as long as the MigrationLock is on place on the target repository.
     Only use Remove-VBODataMigrationLock once all data has been migrated!
@@ -110,7 +116,7 @@ Start-VBODataMigration -Organization <VBOOrganization> -From <VBORepository> -To
 #### Outcome
 Returns a migration session ID (JobId) for tracking progress if run with *-RunAsync*
 #### Notes
-If you use the *-SwitchJobToTargetRepository* parameter, the job switches only after a successful migration. If themigration finishes with errors or warnings, the switch does not occur. After switching, the job remains disabled until you perform the migration verification check and remove migration lock.
+If you use the *-SwitchJobToTargetRepository* parameter, the job switches only after a successful migration. If the migration finishes with errors or warnings, the switch does not occur. After switching, the job remains disabled until you perform the migration verification check and remove migration lock.
 
 ### 4. Monitor status
 #### Purpose
@@ -156,11 +162,28 @@ Managing migration jobs with these commands might take a moment to complete.
 
 ### 6. Verify Data Consistency
 #### Purpose
-Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365-JetToOsrVerification-GUI.ps1* in this folder can be used to compare the data.
+Export inventory reports from both the source and target repositories for comparison, in order to verify that all items were successfully migrated. The Verification PowerShell Script *VB365-JetToOsrVerification.ps1* in this folder can be used to compare the data.
 #### Outcome 
 No differences should be found between source and target. If any differences are detected, it could indicate a data loss during the migration process. In such case, try to run the migration again and if the issue persists, open a support ticket.
 #### Execute
-Run the *VB365-JetToOsrVerification-GUI.ps1* and perform the selections as needed before starting the verification.
+Run the *VB365-JetToOsrVerification.ps1* and perform the selections as needed before starting the verification.
+```
+.\VB365-JetToOsrVerification.ps1 [-ReportPath <String>] [-ArchiverModulePath <String>]
+```
+- *-ReportPath*: base folder for the reports (default: `C:\VBOMigrationVerificationReports`). It is created if it does not exist.
+- *-ArchiverModulePath*: path to the VB365 PowerShell module DLL (default: `C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll`).
+
+The manual equivalent uses the *Get-VBORepositoryInventoryReport* cmdlet for the source and the target repository:
+```
+Get-VBORepositoryInventoryReport -OutputPath <String> -BackupTime <DateTime> -Repository <VBORepository> -Organization <VBOOrganization> [-IncludeDeleted] [-IncludeAllVersions]
+Get-VBORepositoryInventoryReport -OutputPath <String> -BackupTime <DateTime> -Repository <VBORepository> -Job <VBOJob> [-IncludeDeleted] [-IncludeAllVersions]
+```
+#### Output
+Each run writes into its own subfolder named after the run start time, e.g. `C:\VBOMigrationVerificationReports\20261118_150211\`:
+- Inventory report CSV files (Mailboxes, SharePoint sites, Teams, OneDrive) for source and target.
+- *MismatchSummary.txt* (only if mismatches are found): organization, validation scope, source/target repository, restore point and the mismatching records per data type.
+
+Exit code: `0` if no differences were found, `1` if mismatches were found (shown as a warning in the console).
 #### Notes
 The provided script in this folder is provided to ease the process for data verification.
 

@@ -28,31 +28,76 @@
 
 	Prerequisites:
 	  - Run on a VB365 server (or a host with the VB365 PowerShell module installed).
+	  - VB365 v8.6.x is required.
 	  - PowerShell 7 is required (the script uses the ternary operator).
-	  - Adjust the $reportPath variable and the Import-Module path if VB365 is installed
-	    in a non-default location.
+	  - Use -ReportPath and -ArchiverModulePath if the defaults don't fit (e.g. VB365
+	    is installed in a non-default location).
 
 .OUTPUTS
 	Writes status, comparison progress, and any detected differences to the console.
-	Inventory report CSV files are written to the path defined by $reportPath
-	(default: C:\VBOMigrationReports).
+	Inventory report CSV files are written to a per-run subfolder (yyyyMMdd_HHmmss)
+	below -ReportPath (default: C:\VBOMigrationVerificationReports).
 
 	If any differences are found between the source and target inventories, the script
-	prints the mismatching records and throws a terminating error. If no differences are
-	found, it logs a success message.
+	prints the mismatching records, writes them to MismatchSummary.txt in the run
+	subfolder (with organization, scope, repositories and restore point), logs a
+	warning and exits with code 1. If no
+	differences are found, it logs a success message (exit code 0).
 
 .NOTES
     NAME:  VB365-JetToOsrVerification.ps1
-    VERSION: 0.5
+    VERSION: 0.8
     KUDOS: Special thanks to the Veeam team to provide valuable input.
+
+.PARAMETER ArchiverModulePath
+    Path to Veeam.Archiver.PowerShell.dll in the VB365 install root
+    (default: C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll).
+    Importing the DLL directly loads the current module natively in pwsh 7. The .psd1
+    manifest in the Veeam.Archiver.PowerShell subfolder loads an older module version
+    (6.0) that lacks Get-VBORepositoryInventoryReport, and importing by module name goes
+    through the Windows PowerShell compatibility layer, which drops -Confirm:$false.
+
+.PARAMETER ReportPath
+    Base folder for the inventory report CSV files. Each run writes into its own
+    subfolder named after the run start time (yyyyMMdd_HHmmss). Created if it does not exist.
+    Default: C:\VBOMigrationVerificationReports
 #>
 
-# Variables - set these accordingly
-$reportPath = "C:\VBOMigrationReports"
+#Requires -Version 7.0
 
-# If VBO is installed in a different path, please replace it with your own path.
-Import-Module 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll'
+[CmdletBinding()]
+param(
+    [string]$ArchiverModulePath = 'C:\Program Files\Veeam\Backup365\Veeam.Archiver.PowerShell.dll',
 
+    [ValidateNotNullOrEmpty()]
+    [string]$ReportPath = 'C:\VBOMigrationVerificationReports'
+)
+
+# Create a per-run output subfolder named after the script start time (e.g. 20261118_150211)
+$runOutputPath = Join-Path -Path $ReportPath -ChildPath (Get-Date -Format "yyyyMMdd_HHmmss")
+New-Item -ItemType Directory -Path $runOutputPath -Force | Out-Null
+
+### If needed, import PowerShell modules for VB365 and ExchangeOnline
+
+Write-Host "Checking, installing and importing Veeam.Archiver.PowerShell module if needed." -ForegroundColor Yellow
+
+if (-not (Get-Module -Name Veeam.Archiver.PowerShell)) {
+    if (-not (Test-Path $ArchiverModulePath)) {
+        throw "Veeam.Archiver.PowerShell module not found at '$ArchiverModulePath'. Set -ArchiverModulePath to its location."
+    }
+    Import-Module $ArchiverModulePath
+}
+
+$vb365ModuleLoaded = [bool](Get-Module -Name Veeam.Archiver.PowerShell)
+
+if ($vb365ModuleLoaded) {
+    Write-Host "Veeam.Archiver.PowerShell module loaded successfully." -ForegroundColor Green
+} else {
+    Write-Host "PowerShell module load check failed: `n   Veeam.Archiver.PowerShell loaded: $vb365ModuleLoaded." -ForegroundColor Red
+}
+
+#enable the migration option (on VB365 server)
+[Environment]::SetEnvironmentVariable("VEEAM_DATA_MIGRATION_ENABLED", "true")
 
 # Logging Function
 function Write-Log {
@@ -100,12 +145,18 @@ function Format-ComparisonDifferences {
     )
     
     Write-LogWarning "$DataType data mismatch detected! Differences:"
-    $DiffObject | Select-Object @{Name="Repository";Expression={
+    $rows = $DiffObject | Select-Object @{Name="Repository";Expression={
              switch ($_.SideIndicator) {
                  "=>" { "Target" }
                  "<=" { "Source" }
              }
-         }}, * | Select-Object -ExcludeProperty SideIndicator | Format-Table -AutoSize
+         }}, * | Select-Object -ExcludeProperty SideIndicator
+    $rows | Format-Table -AutoSize | Out-Host
+
+    # Collect the same table for the summary file (wide, so columns are not truncated)
+    $script:mismatchSummary.Add("$DataType data mismatch detected! Differences ($(@($rows).Count) records):")
+    $script:mismatchSummary.Add(($rows | Format-Table -AutoSize | Out-String -Width 4096).TrimEnd())
+    $script:mismatchSummary.Add("")
 }
 
 # Function to compare data between source and target inventories
@@ -207,18 +258,19 @@ Write-Host
 # Verify Data Migration (compare inventory reports)
 $latestRestorePoint = Get-VBORestorePoint -Repository $sourceRepository -Latest
 
+Write-LogInfo "Inventory reports will be written to: $runOutputPath"
 Write-LogInfo "Generating inventory reports for source repository..."
 if ($validationType -eq "Organization") {
-    $sourceInventory = Get-VBORepositoryInventoryReport -OutputPath $reportPath -BackupTime $latestRestorePoint.BackupTime -Repository $sourceRepository -Organization $organization -IncludeAllVersions -IncludeDeleted
+    $sourceInventory = Get-VBORepositoryInventoryReport -OutputPath $runOutputPath -BackupTime $latestRestorePoint.BackupTime -Repository $sourceRepository -Organization $organization -IncludeAllVersions -IncludeDeleted
 } else {
-    $sourceInventory = Get-VBORepositoryInventoryReport -OutputPath $reportPath -BackupTime $latestRestorePoint.BackupTime -Repository $sourceRepository -Job $selectedJob -IncludeAllVersions -IncludeDeleted
+    $sourceInventory = Get-VBORepositoryInventoryReport -OutputPath $runOutputPath -BackupTime $latestRestorePoint.BackupTime -Repository $sourceRepository -Job $selectedJob -IncludeAllVersions -IncludeDeleted
 }
 
 Write-LogInfo "Generating inventory reports for target repository..."
 if ($validationType -eq "Organization") {
-    $targetInventory = Get-VBORepositoryInventoryReport -OutputPath $reportPath -BackupTime $latestRestorePoint.BackupTime -Repository $targetRepository -Organization $organization -IncludeAllVersions -IncludeDeleted
+    $targetInventory = Get-VBORepositoryInventoryReport -OutputPath $runOutputPath -BackupTime $latestRestorePoint.BackupTime -Repository $targetRepository -Organization $organization -IncludeAllVersions -IncludeDeleted
 } else {
-    $targetInventory = Get-VBORepositoryInventoryReport -OutputPath $reportPath -BackupTime $latestRestorePoint.BackupTime -Repository $targetRepository -Job $selectedJob -IncludeAllVersions -IncludeDeleted
+    $targetInventory = Get-VBORepositoryInventoryReport -OutputPath $runOutputPath -BackupTime $latestRestorePoint.BackupTime -Repository $targetRepository -Job $selectedJob -IncludeAllVersions -IncludeDeleted
 }
 Write-Host
 
@@ -237,6 +289,7 @@ $oneDrivesDiff = Compare-InventoryData -SourceInventoryReport ($sourceInventory 
 # Print all differences, if any
 Write-Host
 $hasDiff = $false
+$script:mismatchSummary = [System.Collections.Generic.List[string]]::new()
 
 if ($mailDiff) {
     Format-ComparisonDifferences -DiffObject $mailDiff -DataType "Mailboxes"
@@ -259,7 +312,25 @@ if ($oneDrivesDiff) {
 }
 
 if ($hasDiff) {
-    throw "Data verification failed! See above for details on mismatches."
+    # Write the mismatch summary file into the run folder
+    $summaryFile = Join-Path -Path $runOutputPath -ChildPath "MismatchSummary.txt"
+    $header = @(
+        "VB365 JET to Object Storage migration verification - MISMATCHES FOUND"
+        "======================================================================"
+        "Run time           : $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        "Organization       : $($organization.Name)"
+        "Validation type    : $validationType$(if ($validationType -eq 'Job') { " ($($selectedJob.Name))" })"
+        "Source repository  : $($sourceRepository.Name)"
+        "Target repository  : $($targetRepository.Name)"
+        "Restore point time : $($latestRestorePoint.BackupTime)"
+        "Inventory reports  : $runOutputPath"
+        ""
+    )
+    ($header + $script:mismatchSummary) | Set-Content -Path $summaryFile -Encoding utf8
+
+    Write-LogWarning "Data verification failed! See above for details on mismatches."
+    Write-LogWarning "Mismatch summary written to: $summaryFile"
+    exit 1
 }
 
 Write-LogSuccess "Data verification completed successfully. No differences found."
