@@ -13,8 +13,8 @@
       differences between VBAz versions. Raw JSON is always saved for verification.
 
 .EXAMPLE
-    ./get-vbazJobDetails.ps1 -Server vbaz.contoso.com
-    ./get-vbazJobDetails.ps1 -Server 10.0.0.4 -Credential (Get-Credential) -ApiVersion v8 -OutDir ./out
+    ./VBAz-GetJobDetails.ps1 -Server vbaz.contoso.com
+    ./VBAz-GetJobDetails.ps1 -Server 10.0.0.4 -Credential (Get-Credential) -ApiVersion v8 -OutDir ./out
 #>
 [CmdletBinding()]
 param(

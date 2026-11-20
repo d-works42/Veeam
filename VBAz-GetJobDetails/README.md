@@ -5,8 +5,7 @@ PowerShell script that connects to a Veeam Backup for Microsoft Azure (VBAz) app
 Please be aware that the provided code is only an example and is not officially tested and supported by Veeam or Microsoft. Use it at your own risk and test it in a lab environment first.
 
 > This script was created with the assistance of an AI coding tool (Claude/Anthropic).
-> Review and test it in a lab environment before relying on it in production; provided
-> as-is, with no warranty.
+> Review and test it in a lab environment before relying on it in production; provided as-is, with no warranty.
 
 ## Features
 - Signs in to the appliance with `https://<appliance>/api/oauth2/token` (password grant).
@@ -68,13 +67,13 @@ The CSV contains all columns found across all policies. A cell stays empty when 
 ## Usage
 ```powershell
 # Prompts for the appliance credentials
-./get-vbazJobDetails.ps1 -Server vbaz.contoso.com
+./VBAz-GetJobDetails.ps1 -Server vbaz.contoso.com
 
 # Credentials, API version and output folder given explicitly
-./get-vbazJobDetails.ps1 -Server 10.0.0.4 -Credential (Get-Credential) -ApiVersion v8 -OutDir ./out
+./VBAz-GetJobDetails.ps1 -Server 10.0.0.4 -Credential (Get-Credential) -ApiVersion v8 -OutDir ./out
 
 # Show which workload types were skipped and why
-./get-vbazJobDetails.ps1 -Server vbaz.contoso.com -Verbose
+./VBAz-GetJobDetails.ps1 -Server vbaz.contoso.com -Verbose
 ```
 
 ### Parameters
